@@ -7,6 +7,9 @@ from django.test import TestCase
 from django.test.client import RequestFactory
 
 from mock import patch, MagicMock
+from django.test.client import RequestFactory
+
+from mock import patch
 from nose.plugins.attrib import attr
 from opaque_keys.edx.locations import SlashSeparatedCourseKey
 from opaque_keys.edx.locator import CourseLocator, BlockUsageLocator
@@ -14,7 +17,8 @@ from opaque_keys.edx.locator import CourseLocator, BlockUsageLocator
 from courseware.grades import grade, iterate_grades_for
 from courseware.grades import field_data_cache_for_grading, grade, iterate_grades_for, MaxScoresCache, ProgressSummary
 from student.tests.factories import UserFactory
-from xmodule.modulestore.tests.factories import CourseFactory
+from student.models import CourseEnrollment
+from xmodule.modulestore.tests.factories import CourseFactory, ItemFactory
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 
@@ -319,4 +323,3 @@ class TestProgressSummary(TestCase):
         earned, possible = self.progress_summary.score_for_module(self.loc_m)
         self.assertEqual(earned, 0)
         self.assertEqual(possible, 0)
-
