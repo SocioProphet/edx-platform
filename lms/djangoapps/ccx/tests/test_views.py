@@ -387,6 +387,50 @@ class TestCoachDashboard(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
             ).exists()
         )
 
+    def test_manage_add_single_invalid_student(self):
+        """enroll a single non valid student
+        """
+        self.make_coach()
+        ccx = self.make_ccx()
+        course_key = CCXLocator.from_course_locator(self.course.id, ccx.id)
+        url = reverse(
+            'ccx_manage_student',
+            kwargs={'course_id': course_key}
+        )
+        redirect_url = reverse(
+            'ccx_coach_dashboard',
+            kwargs={'course_id': course_key}
+        )
+        data = {
+            'student-action': 'add',
+            'student-id': u','.join(["test_wrong_user_name", ]),  # pylint: disable=no-member
+        }
+        response = self.client.post(url, data=data, follow=True)
+
+        self.assertContains(
+            response,
+            'Could not find a user with name or email "test_wrong_user_name" ',
+            status_code=200
+        )
+
+        # we were redirected to our current location
+        self.assertRedirects(response, redirect_url, status_code=302)
+
+        data = {
+            'student-action': 'add',
+            'student-id': u','.join(["xyz@gmail.com", ]),  # pylint: disable=no-member
+        }
+        response = self.client.post(url, data=data, follow=True)
+
+        self.assertContains(
+            response,
+            'Could not find a user with name or email "xyz@gmail.com" ',
+            status_code=200
+        )
+
+        # we were redirected to our current location
+        self.assertRedirects(response, redirect_url, status_code=302)
+
     def test_manage_add_single_student(self):
         """enroll a single student who is a member of the class already
         """
