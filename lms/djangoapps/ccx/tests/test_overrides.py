@@ -1,16 +1,27 @@
+# coding=UTF-8
 """
 tests for overrides
 """
 import datetime
+import ddt
 import mock
 import pytz
 from nose.plugins.attrib import attr
 
 from courseware.field_overrides import OverrideFieldData  # pylint: disable=import-error
+from courseware.views import progress  # pylint: disable=import-error
+from django.core import cache
+from django.test.client import RequestFactory
 from django.test.utils import override_settings
-from student.tests.factories import AdminFactory  # pylint: disable=import-error
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, ItemFactory
+from edxmako.middleware import MakoMiddleware  # pylint: disable=import-error
+from student.models import CourseEnrollment  # pylint: disable=import-error
+from student.tests.factories import AdminFactory, UserFactory  # pylint: disable=import-error
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, \
+    TEST_DATA_XML_MODULESTORE
+from xmodule.modulestore.tests.factories import CourseFactory, ItemFactory, \
+    check_mongo_calls
+from xmodule.modulestore.xml_importer import import_course_from_xml
+from xmodule.tests import DATA_DIR  # pylint: disable=import-error
 
 from ..models import CustomCourseForEdX
 from ..overrides import override_field_for_ccx
@@ -129,3 +140,132 @@ class TestFieldOverrides(ModuleStoreTestCase):
         override_field_for_ccx(self.ccx, chapter, 'due', ccx_due)
         vertical = chapter.get_children()[0].get_children()[0]
         self.assertEqual(vertical.due, ccx_due)
+
+
+@attr('shard_1')
+@mock.patch.dict('django.conf.settings.FEATURES', {'ENABLE_XBLOCK_VIEW_ENDPOINT': True})
+@ddt.ddt
+class TestFieldOverridePerformance(ModuleStoreTestCase):
+    """
+    Tests that ensure the field
+    """
+    def setUp(self):
+        """
+        Create a test client, course, and user.
+        """
+        super(TestFieldOverridePerformance, self).setUp()
+
+        self.request_factory = RequestFactory()
+        self.student = UserFactory.create()
+        self.request = self.request_factory.get("foo")
+        self.request.user = self.student
+
+        MakoMiddleware().process_request(self.request)
+
+    def setup_course(self, course_name):
+        """
+        Imports some XML course data.
+        """
+        course = import_course_from_xml(
+            self.store,
+            999,
+            DATA_DIR,
+            ['test_increasing_size/graded_{}'.format(course_name)]
+        )[0]
+
+        CourseEnrollment.enroll(self.student, course.id)
+
+        return course
+
+    def grade_course(self, course):
+        """
+        Renders the progress page for the given course.
+        """
+        return progress(
+            self.request,
+            course_id=course.id.to_deprecated_string(),
+            student_id=self.student.id
+        )
+
+    def instrument_course_grading(self, course_name, queries, reads):
+        """
+        Renders the progress page, instrumenting Mongo reads and SQL queries.
+        """
+        course = self.setup_course(course_name)
+
+        # Disable the cache
+        # TODO: remove once django cache is disabled in tests
+        single_thread_dummy_cache = cache.get_cache(
+            backend='django.core.cache.backends.dummy.DummyCache',
+            LOCATION='single_thread_local_cache'
+        )
+        single_thread_dummy_cache.clear()
+        with self.assertNumQueries(queries):
+            with check_mongo_calls(reads):
+                self.grade_course(course)
+        single_thread_dummy_cache.clear()
+
+    TEST_DATA = {
+        'xml': {
+            'no_overrides': [
+                (19, 7, 'small'), (23, 7, 'medium'), (27, 7, 'large')
+            ],
+            'ccx': [
+                (19, 24, 'small'), (23, 32, 'medium'), (27, 40, 'large')
+            ]
+        },
+        'split': {
+            'no_overrides': [
+                (19, 7, 'small'), (23, 7, 'medium'), (27, 7, 'large')
+            ],
+            'ccx': [
+                (20, 24, 'small'), (23, 32, 'medium'), (27, 40, 'large')
+            ]
+        }
+    }
+
+    @ddt.data(*TEST_DATA['xml']['no_overrides'])
+    @ddt.unpack
+    @override_settings(
+        FIELD_OVERRIDE_PROVIDERS=(),
+        MODULESTORE=TEST_DATA_XML_MODULESTORE
+    )
+    def test_instrument_without_field_override_xml(self, queries, reads, course_name):
+        """
+        Test without any field overrides on XML.
+        """
+        self.instrument_course_grading(course_name, queries, reads)
+
+    @ddt.data(*TEST_DATA['xml']['ccx'])
+    @ddt.unpack
+    @override_settings(
+        FIELD_OVERRIDE_PROVIDERS=('ccx.overrides.CustomCoursesForEdxOverrideProvider',),
+        MODULESTORE=TEST_DATA_XML_MODULESTORE
+    )
+    def test_instrument_with_field_override_xml(self, queries, reads, course_name):
+        """
+        Test with the CCX field override on XML.
+        """
+        self.instrument_course_grading(course_name, queries, reads)
+
+    @ddt.data(*TEST_DATA['split']['no_overrides'])
+    @ddt.unpack
+    @override_settings(
+        FIELD_OVERRIDE_PROVIDERS=(),
+    )
+    def test_instrument_without_field_override_split(self, queries, reads, course_name):
+        """
+        Test without any field overrides on Split.
+        """
+        self.instrument_course_grading(course_name, queries, reads)
+
+    @ddt.data(*TEST_DATA['split']['ccx'])
+    @ddt.unpack
+    @override_settings(
+        FIELD_OVERRIDE_PROVIDERS=('ccx.overrides.CustomCoursesForEdxOverrideProvider',),
+    )
+    def test_instrument_with_field_override_split(self, queries, reads, course_name):
+        """
+        Test with the CCX field override on Split.
+        """
+        self.instrument_course_grading(course_name, queries, reads)

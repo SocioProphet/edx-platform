@@ -1,0 +1,37 @@
+{
+    "course/2015_Summer": {
+        "discussion_topics": {
+            "General": {
+                "id": "i4x-MITx-Test101-course-2015_Summer"
+            }
+        }, 
+        "display_name": "graded-small", 
+        "start": "2030-01-01T00:00:00Z", 
+        "tabs": [
+            {
+                "name": "Courseware", 
+                "type": "courseware"
+            }, 
+            {
+                "name": "Course Info", 
+                "type": "course_info"
+            }, 
+            {
+                "name": "Textbooks", 
+                "type": "textbooks"
+            }, 
+            {
+                "name": "Discussion", 
+                "type": "discussion"
+            }, 
+            {
+                "name": "Wiki", 
+                "type": "wiki"
+            }, 
+            {
+                "name": "Progress", 
+                "type": "progress"
+            }
+        ]
+    }
+}
