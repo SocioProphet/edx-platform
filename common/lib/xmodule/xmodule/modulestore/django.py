@@ -21,6 +21,7 @@ from django.core.cache import get_cache, InvalidCacheBackendError
 import django.dispatch
 import django.utils
 
+from ccx.modulestore import CCXModulestoreWrapper
 from pymongo import ReadPreference
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.draft_and_published import BranchSettingMixin
@@ -194,7 +195,6 @@ def modulestore():
         )
 
         if settings.FEATURES.get('CUSTOM_COURSES_EDX'):
-            from ccx.modulestore import CCXModulestoreWrapper
             _MIXED_MODULESTORE = CCXModulestoreWrapper(_MIXED_MODULESTORE)
 
     return _MIXED_MODULESTORE
