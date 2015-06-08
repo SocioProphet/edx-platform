@@ -17,14 +17,13 @@ from opaque_keys.edx.locator import CourseLocator, BlockUsageLocator
 def strip_ccx(val):
     retval = val
     ccx_id = None
-    if hasattr(retval, 'ccx'):
-        if isinstance(retval, CCXLocator):
-            ccx_id = retval.ccx
-            retval = retval.to_course_locator()
-        elif isinstance(object, CCXBlockUsageLocator):
-            ccx_id = retval.course_key.ccx
-            retval = retval.to_block_locator()
-    if hasattr(retval, 'location'):
+    if isinstance(retval, CCXLocator):
+        ccx_id = retval.ccx
+        retval = retval.to_course_locator()
+    elif isinstance(object, CCXBlockUsageLocator):
+        ccx_id = retval.course_key.ccx
+        retval = retval.to_block_locator()
+    elif hasattr(retval, 'location'):
         retval.location, ccx_id = strip_ccx(retval.location)
     return retval, ccx_id
 
