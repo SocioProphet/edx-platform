@@ -14,30 +14,16 @@ from ccx_keys.locator import CCXLocator, CCXBlockUsageLocator
 from opaque_keys.edx.locator import CourseLocator, BlockUsageLocator
 
 
-def ccx_locator_to_course_locator(ccx_locator):
-    return CourseLocator(
-        org=ccx_locator.org,
-        course=ccx_locator.course,
-        run=ccx_locator.run,
-        branch=ccx_locator.branch,
-        version_guid=ccx_locator.version_guid,
-    )
-
-
 def strip_ccx(val):
     retval = val
     ccx_id = None
     if hasattr(retval, 'ccx'):
         if isinstance(retval, CCXLocator):
             ccx_id = retval.ccx
-            retval = ccx_locator_to_course_locator(retval)
+            retval = retval.to_course_locator()
         elif isinstance(object, CCXBlockUsageLocator):
-            ccx_locator = retval.course_key
-            ccx_id = ccx_locator.ccx
-            course_locator = ccx_locator_to_course_locator(ccx_locator)
-            retval = BlockUsageLocator(
-                course_locator, retval.block_type, retval.block_id
-            )
+            ccx_id = retval.course_key.ccx
+            retval = retval.to_block_locator()
     if hasattr(retval, 'location'):
         retval.location, ccx_id = strip_ccx(retval.location)
     return retval, ccx_id
@@ -255,8 +241,8 @@ class CCXModulestoreWrapper(object):
         return retval
 
     def has_published_version(self, xblock):
-        xblock.scope_ids.usage_id.course_key, ccx = strip_ccx(
-            xblock.scope_ids.usage_id.course_key
+        xblock.scope_ids.usage_id, ccx = strip_ccx(
+            xblock.scope_ids.usage_id
         )
         retval = self._modulestore.has_published_version(xblock)
         if ccx:
