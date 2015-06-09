@@ -18,6 +18,7 @@ from django.http import (
     HttpResponseForbidden,
     HttpResponseRedirect,
 )
+from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.http import Http404
@@ -147,6 +148,17 @@ def create_ccx(request, course, ccx=None):
     Create a new CCX
     """
     name = request.POST.get('name')
+
+    # prevent CCX objects from being created for deprecated course ids.
+    if course.id.deprecated:
+        messages.error(_(
+            "You cannot create a CCX from a course using a deprecated id. "
+            "Please create a rerun of this course in the studio to allow "
+            "this action.")
+        )
+        url = reverse('ccx_coach_dashboard', kwargs={'course_id', course.id})
+        return redirect(url)
+
     ccx = CustomCourseForEdX(
         course_id=course.id,
         coach=request.user,
