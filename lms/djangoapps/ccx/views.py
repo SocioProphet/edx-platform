@@ -74,8 +74,6 @@ def coach_dashboard(view):
         course_key = CourseKey.from_string(course_id)
         ccx = None
         if isinstance(course_key, CCXLocator):
-            # is there a security leak here in not checking that this user is
-            # the coach for this ccx?
             ccx_id = course_key.ccx
             ccx = CustomCourseForEdX.objects.get(pk=ccx_id)
             course_key = ccx.course_id
@@ -86,6 +84,15 @@ def coach_dashboard(view):
                 _('You must be a CCX Coach to access this view.'))
 
         course = get_course_by_id(course_key, depth=None)
+
+        # if there is a ccx, we must validate that it is the ccx for this coach
+        if ccx is not None:
+            coach_ccx = get_ccx_for_coach(course, request.user)
+            if coach_ccx is None or coach_ccx.id != ccx.id:
+                return HttpResponseForbidden(
+                    _('You must be the coach for this ccx to access this view')
+                )
+
         return view(request, course, ccx)
     return wrapper
 
