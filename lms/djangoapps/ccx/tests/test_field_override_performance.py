@@ -7,7 +7,8 @@ import mock
 
 from courseware.views import progress  # pylint: disable=import-error
 from datetime import datetime
-from django.core.cache import cache
+from django.core.cache import get_cache
+from django.conf import settings
 from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from edxmako.middleware import MakoMiddleware  # pylint: disable=import-error
@@ -103,7 +104,7 @@ class FieldOverridePerformanceTestCase(ProceduralCourseTestMixin,
         """
         return progress(
             self.request,
-            course_id=course.id.to_deprecated_string(),
+            course_id=unicode(course.id),
             student_id=self.student.id
         )
 
@@ -115,7 +116,10 @@ class FieldOverridePerformanceTestCase(ProceduralCourseTestMixin,
 
         # Clear the cache before measuring
         # TODO: remove once django cache is disabled in tests
-        cache.clear()
+        for cache in settings.CACHES.keys():
+            get_cache(cache).clear()
+            print 'Clear cache:', cache
+
         with self.assertNumQueries(queries):
             with check_mongo_calls(reads):
                 self.grade_course(self.course)
