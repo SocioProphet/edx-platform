@@ -496,3 +496,6 @@ PROFILE_IMAGE_MIN_BYTES = 100
 # Enable the LTI provider feature for testing
 FEATURES['ENABLE_LTI_PROVIDER'] = True
 INSTALLED_APPS += ('lti_provider',)
+
+# Enable the Full Course/Library Import/Export API
+FEATURES['ENABLE_IMPORT_EXPORT_LMS'] = True
