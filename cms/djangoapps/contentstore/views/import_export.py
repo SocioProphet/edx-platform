@@ -156,7 +156,7 @@ def export_handler(request, course_key_string):
             "failed_module": failed_module,
             "edit_unit_url": edit_unit_url,
             "course_home_url": successful_url,
-            "raw_err_msg": error_message,
+            "raw_err_msg": error_message.replace("\"", "\\\""),
             "library": library
         })
     else:
