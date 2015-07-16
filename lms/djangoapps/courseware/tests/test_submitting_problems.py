@@ -127,6 +127,36 @@ class TestSubmittingProblems(ModuleStoreTestCase, LoginEnrollmentTestCase):
         resp = self.client.post(modx_url)
         return resp
 
+
+class TestSubmittingProblems(ModuleStoreTestCase, LoginEnrollmentTestCase, ProblemSubmissionTestMixin):
+    """
+    Check that a course gets graded properly.
+    """
+
+    # arbitrary constant
+    COURSE_SLUG = "100"
+    COURSE_NAME = "test_course"
+
+    def setUp(self):
+
+        super(TestSubmittingProblems, self).setUp(create_user=False)
+        # Create course
+        self.course = CourseFactory.create(display_name=self.COURSE_NAME, number=self.COURSE_SLUG)
+        assert self.course, "Couldn't load course %r" % self.COURSE_NAME
+
+        # create a test student
+        self.student = 'view@test.com'
+        self.password = 'foo'
+        self.create_account('u1', self.student, self.password)
+        self.activate_user(self.student)
+        self.enroll(self.course)
+        self.student_user = User.objects.get(email=self.student)
+        self.factory = RequestFactory()
+        # Disable the score change signal to prevent other components from being pulled into tests.
+        signal_patch = patch('courseware.module_render.SCORE_CHANGED.send')
+        signal_patch.start()
+        self.addCleanup(signal_patch.stop)
+
     def add_dropdown_to_section(self, section_location, name, num_inputs=2):
         """
         Create and return a dropdown problem.
