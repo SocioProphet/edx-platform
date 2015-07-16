@@ -4,9 +4,8 @@ Test grade calculation.
 from django.http import Http404
 
 from django.test import TestCase
-from django.test.client import RequestFactory
 
-from mock import patch, MagicMock
+from mock import MagicMock
 from django.test.client import RequestFactory
 
 from mock import patch
