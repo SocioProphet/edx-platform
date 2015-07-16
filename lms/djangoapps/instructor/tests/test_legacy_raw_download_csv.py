@@ -67,11 +67,6 @@ class TestRawGradeCSV(TestSubmittingProblems):
 '''
         self.assertEqual(body, expected_csv, msg)
 
-<<<<<<< HEAD
-    def test_grade_summary_data(self):
-        """
-        Test grade summary data report generation
-=======
     def get_expected_grade_data(
             self, get_grades=True, get_raw_scores=False,
             use_offline=False, get_score_max=False):
@@ -89,7 +84,6 @@ class TestRawGradeCSV(TestSubmittingProblems):
         the actual score and total possible are returned. For example, if the
         student got one out of two possible points, the values (1, 2) will be
         returned instead of 0.5.
->>>>>>> 5d88300... Added max score to output of get_student_grade_summary_data.
         """
         self.answer_question()
 
@@ -124,8 +118,6 @@ class TestRawGradeCSV(TestSubmittingProblems):
             ]
         }
 
-<<<<<<< HEAD
-=======
         # The first five columns contain the student ID, username,
         # full name, and e-mail addresses.
         non_grade_columns = 5
@@ -283,7 +275,6 @@ class TestRawGradeCSV(TestSubmittingProblems):
         )
 
         # Ensure the student info and assignment names are as expected.
->>>>>>> 5d88300... Added max score to output of get_student_grade_summary_data.
         for key in ['assignments', 'header']:
             self.assertListEqual(expected_data[key], data[key])
 
