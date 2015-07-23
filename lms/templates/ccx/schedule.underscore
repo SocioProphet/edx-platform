@@ -1,3 +1,8 @@
+  <div align="right">
+    <button id="ccx_expand_all_btn" aria-expanded="true">Expand All</button>
+    <button id="ccx_collapse_all_btn" aria-expanded="false">Collapse All</button>
+  </div>
+  <br/>
   <table class="ccx-schedule">
     <thead>
       <tr>
@@ -12,37 +17,39 @@
     <tbody>
       <% _.each(chapters, function(chapter) { %>
         <tr class="chapter collapsed" data-location="<%= chapter.location %>" data-depth="1">
-          <td class="unit">
-            <a href="#"><i class="fa fa-caret-right toggle-collapse"></i></a>
-            <%= chapter.display_name %>
+          <td class="unit" aria-label="Link chapter <%= chapter.display_name %>">
+            <a href="#" class="toggle-collapse"><i class="fa fa-caret-right"></i></a>
+            <span aria-label="Section <%= chapter.display_name %>"><%= chapter.display_name %></span>
           </td>
-          <td class="date start-date"><a><%= chapter.start %></a></td>
-          <td class="date due-date"><a><%= chapter.due %></a></td>
-          <td><a href="#" class="remove-unit">
-            <i class="fa fa-remove"></i> <%- gettext('remove') %>
+          <td class="date start-date"><button><%= chapter.start %></button></td>
+          <td class="date due-date"><button><%= chapter.due %></button></td>
+          <td><a href="#" class="remove-unit" aria-label="Remove chapter <%= chapter.display_name %>">
+            <i class="fa fa-remove" aria-hidden="true"></i> <%- gettext('remove') %>
           </a></td>
         </tr>
         <% _.each(chapter.children, function(child) { %>
           <tr class="sequential collapsed" data-depth="2"
               data-location="<%= chapter.location %> <%= child.location %>">
-            <td class="unit">
-              <a href="#"><i class="fa fa-caret-right toggle-collapse"></i></a>
-              <%= child.display_name %>
+            <td class="unit" aria-label="Link subsection <%= child.display_name %>">
+              <a href="#" class="toggle-collapse"><i class="fa fa-caret-right"></i></a>
+              <span aria-label="Subsection <%= child.display_name %>"><%= child.display_name %></span>
             </td>
-            <td class="date start-date"><a><%= child.start %></a></td>
-            <td class="date due-date"><a><%= child.due %></a></td>
-            <td><a href="#" class="remove-unit">
-              <i class="fa fa-remove"></i> <%- gettext('remove') %>
+            <td class="date start-date"><button><%= child.start %></button></td>
+            <td class="date due-date"><button><%= child.due %></button></td>
+            <td><a href="#" class="remove-unit" aria-label="Remove subsection <%= child.display_name %>">
+              <i class="fa fa-remove" aria-hidden="true"></i> <%- gettext('remove') %>
             </a></td>
           </tr>
           <% _.each(child.children, function(subchild) { %>
             <tr class="vertical" data-dapth="3"
                 data-location="<%= chapter.location %> <%= child.location %> <%= subchild.location %>">
-              <td class="unit">&nbsp;<%= subchild.display_name %></td>
-              <td class="date start-date"><a><%= subchild.start %></a></td>
-              <td class="date due-date"><a><%= subchild.due %></a></td>
-              <td><a href="#" class="remove-unit">
-                <i class="fa fa-remove"></i> <%- gettext('remove') %>
+              <td class="unit" aria-label="Unit <%= subchild.display_name %>">&nbsp;
+                <span aria-label="Unit <%= subchild.display_name %>"><%= subchild.display_name %></span>
+              </td>
+              <td class="date start-date"><button><%= subchild.start %></button></td>
+              <td class="date due-date"><button><%= subchild.due %></button></td>
+              <td><a href="#" class="remove-unit" aria-label="Remove unit <%= subchild.display_name %>">
+                <i class="fa fa-remove" aria-hidden="true"></i> <%- gettext('remove') %>
               </a></td>
           <% }); %>
         <% }); %>
