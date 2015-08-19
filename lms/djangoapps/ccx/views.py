@@ -163,14 +163,15 @@ def create_ccx(request, course, ccx=None):
 
     ccx = CustomCourseForEdX(
         course_id=course.id,
-        coach=request.user,
-        display_name=name)
+        coach=request.user)
     ccx.save()
 
     # Make sure start/due are overridden for entire course
     start = TODAY().replace(tzinfo=pytz.UTC)
     override_field_for_ccx(ccx, course, 'start', start)
     override_field_for_ccx(ccx, course, 'due', None)
+    if name:
+        override_field_for_ccx(ccx, course, 'display_name', name)
 
     # Hide anything that can show up in the schedule
     hidden = 'visible_to_staff_only'
@@ -410,7 +411,7 @@ def ccx_invite(request, course, ccx=None):
         try:
             validate_email(email)
             course_key = CCXLocator.from_course_locator(course.id, ccx.id)
-            email_params = get_email_params(course, auto_enroll)
+            email_params = get_email_params(course_key, auto_enroll)
             if action == 'Enroll':
                 enroll_email(
                     course_key,

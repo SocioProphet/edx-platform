@@ -27,6 +27,7 @@ from instructor.enrollment import (
     render_message_to_string,
 )
 from opaque_keys.edx.locations import SlashSeparatedCourseKey
+from opaque_keys.edx.keys import CourseKey
 
 from submissions import api as sub_api
 from student.models import anonymous_id_for_user
@@ -591,7 +592,8 @@ class TestGetEmailParams(ModuleStoreTestCase):
     def test_normal_params(self):
         # For a normal site, what do we expect to get for the URLs?
         # Also make sure `auto_enroll` is properly passed through.
-        result = get_email_params(self.course, False)
+        course_key = CourseKey.from_string(self.course.id)
+        result = get_email_params(course_key, False)
 
         self.assertEqual(result['auto_enroll'], False)
         self.assertEqual(result['course_about_url'], self.course_about_url)
@@ -602,7 +604,8 @@ class TestGetEmailParams(ModuleStoreTestCase):
         # For a site with a marketing front end, what do we expect to get for the URLs?
         # Also make sure `auto_enroll` is properly passed through.
         with mock.patch.dict('django.conf.settings.FEATURES', {'ENABLE_MKTG_SITE': True}):
-            result = get_email_params(self.course, True)
+            course_key = CourseKey.from_string(self.course.id)
+            result = get_email_params(course_key, True)
 
         self.assertEqual(result['auto_enroll'], True)
         # We should *not* get a course about url (LMS doesn't know what the marketing site URLs are)

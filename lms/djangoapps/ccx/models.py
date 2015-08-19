@@ -22,7 +22,6 @@ class CustomCourseForEdX(models.Model):
     A Custom Course.
     """
     course_id = CourseKeyField(max_length=255, db_index=True)
-    display_name = models.CharField(max_length=255)
     coach = models.ForeignKey(User, db_index=True)
 
     @lazy
@@ -32,10 +31,18 @@ class CustomCourseForEdX(models.Model):
         with store.bulk_operations(self.course_id):
             course = store.get_course(self.course_id)
             if not course or isinstance(course, ErrorDescriptor):
-                log.error("CCX {0} from {2} course {1}".format(  # pylint: disable=logging-format-interpolation
-                    self.display_name, self.course_id, "broken" if course else "non-existent"
+                log.error("CCX {1} course {0}".format(  # pylint: disable=logging-format-interpolation
+                    self.course_id, "broken" if course else "non-existent"
                 ))
             return course
+
+    @lazy
+    def display_name(self):
+        """Get the value of the override of the 'display_name' String for this CCX
+        """
+        # avoid circular import problems
+        from .overrides import get_override_for_ccx
+        return get_override_for_ccx(self, self.course, 'display_name', self.course.display_name_with_default)
 
     @lazy
     def start(self):
@@ -93,6 +100,13 @@ class CustomCourseForEdX(models.Model):
         if format_string == 'DATE_TIME':
             value += u' UTC'
         return value
+
+    @property
+    def display_name_with_default(self):
+        """
+        Return reasonable display name for the course.
+        """
+        return self.display_name
 
 
 class CcxFieldOverride(models.Model):

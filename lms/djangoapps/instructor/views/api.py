@@ -386,7 +386,8 @@ def register_and_enroll_students(request, course_id):  # pylint: disable=too-man
             name = student[NAME_INDEX]
             country = student[COUNTRY_INDEX][:2]
 
-            email_params = get_email_params(course, True, secure=request.is_secure())
+            course_key = CourseKey.from_string(course.id)
+            email_params = get_email_params(course_key, True, secure=request.is_secure())
             try:
                 validate_email(email)  # Raises ValidationError if invalid
             except ValidationError:
@@ -575,8 +576,7 @@ def students_update_enrollment(request, course_id):
 
     email_params = {}
     if email_students:
-        course = get_course_by_id(course_id)
-        email_params = get_email_params(course, auto_enroll, secure=request.is_secure())
+        email_params = get_email_params(course_id, auto_enroll, secure=request.is_secure())
 
     results = []
     for identifier in identifiers:
@@ -706,7 +706,7 @@ def bulk_beta_modify_access(request, course_id):
     email_params = {}
     if email_students:
         secure = request.is_secure()
-        email_params = get_email_params(course, auto_enroll=auto_enroll, secure=secure)
+        email_params = get_email_params(course_id, auto_enroll=auto_enroll, secure=secure)
 
     for identifier in identifiers:
         try:

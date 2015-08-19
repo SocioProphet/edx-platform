@@ -115,7 +115,7 @@ def delete_redemption_entry(request, code_redemption, course_key):
     CourseEnrollment.unenroll(user, course_key, skip_refund=True)
 
     course = get_course_by_id(course_key, depth=0)
-    email_params = get_email_params(course, True, secure=request.is_secure())
+    email_params = get_email_params(course_key, True, secure=request.is_secure())
     email_params['message'] = 'enrolled_unenroll'
     email_params['email_address'] = email_address
     email_params['full_name'] = full_name

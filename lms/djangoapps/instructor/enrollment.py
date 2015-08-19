@@ -13,6 +13,9 @@ from django.core.mail import send_mail
 from django.utils.translation import override as override_language
 
 from student.models import CourseEnrollment, CourseEnrollmentAllowed
+from ccx_keys.locator import CCXLocator
+from ccx.models import CustomCourseForEdX
+from courseware.courses import get_course_by_id
 from courseware.models import StudentModule
 from edxmako.shortcuts import render_to_string
 from lang_pref import LANGUAGE_KEY
@@ -261,14 +264,14 @@ def _reset_module_attempts(studentmodule):
     studentmodule.save()
 
 
-def get_email_params(course, auto_enroll, secure=True):
+def get_email_params(course_key, auto_enroll, secure=True):
     """
     Generate parameters used when parsing email templates.
 
     `auto_enroll` is a flag for auto enrolling non-registered students: (a `boolean`)
     Returns a dict of parameters
     """
-
+    is_shib_course = None
     protocol = 'https' if secure else 'http'
 
     stripped_site_name = microsite.get_value(
@@ -285,7 +288,7 @@ def get_email_params(course, auto_enroll, secure=True):
     course_url = u'{proto}://{site}{path}'.format(
         proto=protocol,
         site=stripped_site_name,
-        path=reverse('course_root', kwargs={'course_id': course.id.to_deprecated_string()})
+        path=reverse('course_root', kwargs={'course_id': course_key})
     )
 
     # We can't get the url to the course's About page if the marketing site is enabled.
@@ -294,21 +297,37 @@ def get_email_params(course, auto_enroll, secure=True):
         course_about_url = u'{proto}://{site}{path}'.format(
             proto=protocol,
             site=stripped_site_name,
-            path=reverse('about_course', kwargs={'course_id': course.id.to_deprecated_string()})
+            path=reverse('about_course', kwargs={'course_id': course_key})
         )
 
-    is_shib_course = uses_shib(course)
+    if isinstance(course_key, CCXLocator):
+        ccx_id = course_key.ccx
+        course = CustomCourseForEdX.objects.get(pk=ccx_id)
+    else:
+        course = get_course_by_id(course_key, depth=None)
+        is_shib_course = uses_shib(course)
 
     # Composition of email
-    email_params = {
-        'site_name': stripped_site_name,
-        'registration_url': registration_url,
-        'course': course,
-        'auto_enroll': auto_enroll,
-        'course_url': course_url,
-        'course_about_url': course_about_url,
-        'is_shib_course': is_shib_course,
-    }
+    if is_shib_course:
+        email_params = {
+            'site_name': stripped_site_name,
+            'registration_url': registration_url,
+            'course': course,
+            'auto_enroll': auto_enroll,
+            'course_url': course_url,
+            'course_about_url': course_about_url,
+            'is_shib_course': is_shib_course
+        }
+    else:
+        email_params = {
+            'site_name': stripped_site_name,
+            'registration_url': registration_url,
+            'course': course,
+            'auto_enroll': auto_enroll,
+            'course_url': course_url,
+            'course_about_url': course_about_url,
+        }
+
     return email_params
 
 
