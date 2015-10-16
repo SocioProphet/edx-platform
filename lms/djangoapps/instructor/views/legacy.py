@@ -631,17 +631,21 @@ class GradeTable(object):
         self.grades = {}
         self._current_row = {}
 
-    def _add_grade_to_row(self, component, score):
+    def _add_grade_to_row(self, component, score, possible=None):
         """Creates component if needed, and assigns score
 
         Args:
             component (str): Course component being graded
             score (float): Score of student on component
+            possible (float): Max possible score for the component
 
         Returns:
            None
         """
         component_index = self.components.setdefault(component, len(self.components))
+        if possible is not None:
+            # send a tuple instead of a single value
+            score = (score, possible)
         self._current_row[component_index] = score
 
     @contextmanager
@@ -681,7 +685,10 @@ class GradeTable(object):
         return self.components.keys()
 
 
-def get_student_grade_summary_data(request, course, get_grades=True, get_raw_scores=False, use_offline=False):
+def get_student_grade_summary_data(
+    request, course, get_grades=True, get_raw_scores=False,
+    use_offline=False, get_score_max=False
+):
     """
     Return data arrays with student identity and grades for specified course.
 
@@ -723,9 +730,11 @@ def get_student_grade_summary_data(request, course, get_grades=True, get_raw_sco
             log.debug(u'student=%s, gradeset=%s', student, gradeset)
             with gtab.add_row(student.id) as add_grade:
                 if get_raw_scores:
-                    # TODO (ichuang) encode Score as dict instead of as list, so score[0] -> score['earned']
                     for score in gradeset['raw_scores']:
-                        add_grade(score.section, getattr(score, 'earned', score[0]))
+                        if get_score_max is True:
+                            add_grade(score.section, score.earned, score.possible)
+                        else:
+                            add_grade(score.section, score.earned)
                 else:
                     for grade_item in gradeset['section_breakdown']:
                         add_grade(grade_item['label'], grade_item['percent'])

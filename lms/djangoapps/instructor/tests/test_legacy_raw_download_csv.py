@@ -69,6 +69,7 @@ class TestRawGradeCSV(TestSubmittingProblems):
 
     def get_expected_data(
         self, get_grades=True, get_raw_scores=False, use_offline=False,
+        get_score_max=False,
     ):
         """
         Return expected results from the get_student_grade_summary_data call
@@ -132,6 +133,8 @@ class TestRawGradeCSV(TestSubmittingProblems):
                 u'ID', u'Username', u'Full Name', u'edX email',
                 u'External email', u'p3', u'p2', u'p1'
             ]
+            if get_score_max is True:
+                expected_data["data"][-1][-3:] = (0.0, 1), (1.0, 1.0), (0.0, 1)
 
         return expected_data
 
@@ -247,6 +250,31 @@ class TestRawGradeCSV(TestSubmittingProblems):
             request, self.course, use_offline=True, get_raw_scores=True)
         expected_data = self.get_expected_data(
             use_offline=True, get_raw_scores=True)
+
+        for key in ['assignments', 'header']:
+            self.assertListEqual(expected_data[key], data[key])
+
+        for index, student in enumerate(expected_data['students']):
+            self.assertEqual(
+                student.username,
+                data['students'][index].username
+            )
+            self.assertListEqual(
+                expected_data['data'][index],
+                data['data'][index]
+            )
+
+    def test_grade_summary_data_get_weighted(self):
+        """
+        Test grade summary data report generation with get_score_max
+        set to true.
+        """
+        request = DummyRequest()
+        self.answer_question()
+        expected_data = self.get_expected_data(
+            get_raw_scores=True, get_score_max=True)
+        data = get_student_grade_summary_data(
+            request, self.course, get_raw_scores=True, get_score_max=True)
 
         for key in ['assignments', 'header']:
             self.assertListEqual(expected_data[key], data[key])
