@@ -342,8 +342,6 @@ class Courses(SysadminDashboardView):
     provides course listing information.
     """
 
-    _git_cache_prefix = "CourseGitLog:"
-
     def git_info_for_course(self, cdir, version=None):
         """This pulls out some git info like the last commit"""
 
@@ -360,16 +358,14 @@ class Courses(SysadminDashboardView):
         cmd = ['git', 'log', '-1',
                '--format=format:{ "commit": "%H", "author": "%an %ae", "date": "%ad"}', ]
 
-        key = '%s:%s' % (self._git_cache_prefix, cdir)
+
+        key = 'CourseGitLog:%s' % cdir
 
         try:
             log_json = cache.get(key, version=version)
             if log_json is None:
-                log.info("Cache miss on course %s version %s. Fetching", cdir, version)
                 log_json = subprocess.check_output(cmd, cwd=gdir)
                 cache.set(key, log_json, version=version)
-            else:
-                log.info("cache hit for course %s, %s", cdir, version)
             output_json = json.loads(log_json)
             info = [output_json['commit'],
                     output_json['date'],
