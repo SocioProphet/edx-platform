@@ -14,6 +14,7 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db import IntegrityError
@@ -341,7 +342,9 @@ class Courses(SysadminDashboardView):
     provides course listing information.
     """
 
-    def git_info_for_course(self, cdir):
+    _git_cache_prefix = "CourseGitLog:"
+
+    def git_info_for_course(self, cdir, version=None):
         """This pulls out some git info like the last commit"""
 
         cmd = ''
@@ -356,8 +359,18 @@ class Courses(SysadminDashboardView):
 
         cmd = ['git', 'log', '-1',
                '--format=format:{ "commit": "%H", "author": "%an %ae", "date": "%ad"}', ]
+
+        key = '%s:%s' % (self._git_cache_prefix, cdir)
+
         try:
-            output_json = json.loads(subprocess.check_output(cmd, cwd=gdir))
+            log_json = cache.get(key, version=version)
+            if log_json is None:
+                log.info("Cache miss on course %s version %s. Fetching", cdir, version)
+                log_json = subprocess.check_output(cmd, cwd=gdir)
+                cache.set(key, log_json, version=version)
+            else:
+                log.info("cache hit for course %s, %s", cdir, version)
+            output_json = json.loads(log_json)
             info = [output_json['commit'],
                     output_json['date'],
                     output_json['author'], ]
@@ -510,8 +523,9 @@ class Courses(SysadminDashboardView):
 
         for course in self.get_courses():
             gdir = course.id.course
+            version = int(course.edited_on.strftime('%s'))
             data.append([course.display_name, course.id.to_deprecated_string()]
-                        + self.git_info_for_course(gdir))
+                        + self.git_info_for_course(gdir, version=version))
 
         return dict(header=[_('Course Name'),
                             _('Directory/ID'),
