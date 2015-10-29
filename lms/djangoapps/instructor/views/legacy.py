@@ -686,8 +686,8 @@ class GradeTable(object):
 
 
 def get_student_grade_summary_data(
-    request, course, get_grades=True, get_raw_scores=False,
-    use_offline=False, get_score_max=False
+        request, course, get_grades=True, get_raw_scores=False,
+        use_offline=False, get_score_max=False
 ):
     """
     Return data arrays with student identity and grades for specified course.

@@ -68,8 +68,8 @@ class TestRawGradeCSV(TestSubmittingProblems):
         self.assertEqual(body, expected_csv, msg)
 
     def get_expected_data(
-        self, get_grades=True, get_raw_scores=False, use_offline=False,
-        get_score_max=False,
+            self, get_grades=True, get_raw_scores=False, use_offline=False,
+            get_score_max=False,
     ):
         """
         Return expected results from the get_student_grade_summary_data call
@@ -118,7 +118,7 @@ class TestRawGradeCSV(TestSubmittingProblems):
             if get_grades is False:
                 del expected_data['assignments']
         elif get_raw_scores is True:
-            expected_data["data"] =  [
+            expected_data["data"] = [
                 [
                     1, u'u1', u'username', u'view@test.com',
                     '', None, None, None
