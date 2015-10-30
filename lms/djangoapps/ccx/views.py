@@ -138,6 +138,9 @@ def dashboard(request, course, ccx=None):
         context['grading_policy'] = json.dumps(grading_policy, indent=4)
         context['grading_policy_url'] = reverse(
             'ccx_set_grading_policy', kwargs={'course_id': ccx_locator})
+
+        with ccx_course(ccx_locator) as course:
+            context['course'] = course
     else:
         context['create_ccx_url'] = reverse(
             'create_ccx', kwargs={'course_id': course.id})
