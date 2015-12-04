@@ -51,6 +51,7 @@ from instructor.enrollment import (
     get_email_params,
 )
 
+from lms.djangoapps.ccx.api import send_course_detail_to_ccx_connector
 from lms.djangoapps.ccx.models import CustomCourseForEdX
 from lms.djangoapps.ccx.overrides import (
     get_override_for_ccx,
@@ -208,6 +209,7 @@ def create_ccx(request, course, ccx=None):
         email_params=email_params,
     )
 
+    send_course_detail_to_ccx_connector(request, course)
     return redirect(url)
 
 
