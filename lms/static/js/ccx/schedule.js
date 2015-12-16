@@ -67,6 +67,8 @@ var edx = edx || {};
           // fields are disabled because due dates are not applicable on a chapter.
           self.disableFields($('.ccx_due_date_time_fields'));
           self.enableFields($('.ccx_start_date_time_fields'));
+          self.set_datetime('start', chapter.start);
+          self.set_datetime('due', undefined);
         } else {
           self.sequential_select.html('').prop('disabled', true);
           // When no chapter is selected, all date fields are disabled.
@@ -77,9 +79,17 @@ var edx = edx || {};
 
       this.sequential_select.on('change', function() {
          var sequential_location = self.sequential_select.val();
+         var chapter = self.chapter_select.val();
+         var chapterObj = self.find_unit(self.schedule, chapter);
+
          if (sequential_location !== 'all') {
-           var chapter = self.chapter_select.val(),
-           sequential = self.find_unit(self.hidden, chapter, sequential_location);
+           //save state of chapters start date.
+           var chapterStartDate = self.get_datetime('start');
+           chapterObj.start = chapterStartDate;
+           self.schedule_apply([chapterObj], self.show);
+           self.schedule_collection.set(self.schedule);
+
+           var sequential = self.find_unit(self.hidden, chapter, sequential_location);
            self.vertical_select.html('')
            .append('<option value="all">'+gettext("All units")+'</option>')
            .append(self.schedule_options(sequential.children));
@@ -95,24 +105,32 @@ var edx = edx || {};
            self.vertical_select.html('').prop('disabled', true);
            self.disableFields($('.ccx_due_date_time_fields'));
            self.enableFields($('.ccx_start_date_time_fields'));
+           self.set_datetime('start', chapterObj.start);
+           self.set_datetime('due', undefined);
          }
       });
 
       this.vertical_select.on('change', function() {
         var vertical_location = self.vertical_select.val();
+        var sequential = self.sequential_select.val();
+        var chapter = self.chapter_select.val();
         if (vertical_location !== 'all') {
-          var chapter = self.chapter_select.val(),
-          sequential = self.sequential_select.val();
           var vertical = self.find_unit(
           self.hidden, chapter, sequential, vertical_location);
           // When a unit (aka vertical) is selected, all date fields are disabled because units
           // inherit dates from subsection
           self.disableFields($('.ccx_due_date_time_fields'));
           self.disableFields($('.ccx_start_date_time_fields'));
+          var sequentialObj = self.find_unit(self.schedule, chapter, sequential);
+          self.set_datetime('start', sequentialObj.start);
+          self.set_datetime('due', sequentialObj.due);
         } else {
           // When "All units" is selected, all date fields are enabled,
           // because units inherit dates from subsections and we
           // are showing dates from the selected subsection.
+          var sequentialObj = self.find_unit(self.schedule, chapter, sequential);
+          self.set_datetime('start', sequentialObj.start);
+          self.set_datetime('due', sequentialObj.due);
           self.enableFields($('.ccx_due_date_time_fields'));
           self.enableFields($('.ccx_start_date_time_fields'));
         }
@@ -146,6 +164,14 @@ var edx = edx || {};
               unit.due = due;
             }
           }
+
+          if (unit.category === "sequential") {
+            self.updateCorrespondingDateOfVerticals(unit, "start");
+            self.updateCorrespondingDateOfVerticals(unit, "due");
+          } else if (unit.category === "chapter") {
+            self.updateStartDateOfSequentialsAndVerticalsOfAChapter(unit);
+          }
+
           self.schedule_apply([unit], self.show);
           self.schedule_collection.set(self.schedule);
           self.dirty = true;
@@ -419,14 +445,19 @@ var edx = edx || {};
       $('table.ccx-schedule .sequential,.vertical').hide();
     },
 
-    enterNewDate: function(what) {
+    /**
+     * sets, validates a date on schedule tree.
+     *
+     * @param {string} dateType - date type will be one of ["start", "due"]
+     */
+    enterNewDate: function(dateType) {
       return function() {
         var row = $(this).closest('tr');
         var modal = $('#enter-date-modal')
-        .data('what', what)
+        .data('what', dateType)
         .data('location', row.data('location'));
         modal.find('h2').text(
-          what === 'due' ? gettext("Enter Due Date and Time") :
+          dateType === 'due' ? gettext("Enter Due Date and Time") :
           gettext("Enter Start Date and Time")
         );
         modal.focus();
@@ -448,7 +479,7 @@ var edx = edx || {};
         });
         var path = row.data('location').split(' '),
         unit = self.find_unit(self.schedule, path[0], path[1], path[2]),
-        parts = unit[what] ? unit[what].split(' ') : ['', ''],
+        parts = unit[dateType] ? unit[dateType].split(' ') : ['', ''],
         date = parts[0],
         time = parts[1];
         modal.find('input[name=date]').val(date);
@@ -467,34 +498,96 @@ var edx = edx || {};
             alert('Please enter a valid time');
             return;
           }
-          if (what === 'start') {
-            unit.start = date + ' ' + time;
-            if (unit.category === "sequential") {
-              self.updateChildrenDates(unit, what, unit.start);
+
+          var newDate = date + ' ' + time;
+          if (unit.category === "sequential") {
+            var errorMessage;
+
+            if (dateType === 'start') {
+              // new date should before due date.
+              errorMessage = self.valid_dates(newDate, unit.due);
+            } else {
+              // new date should after start date.
+              errorMessage = self.valid_dates(unit.start, newDate);
+            }
+            if (_.isUndefined(errorMessage)) {
+              self.setDateOfUnitAndReRenderView(dateType, newDate, unit, modal);
+            } else {
+              // Show error message is date in not valid.
+              self.dirty = false;
+              modal.find('.close-modal').click();
+              $('#ccx_schedule_error_message').text(errorMessage);
+              $('#ajax-error').show().focus();
+              $('#dirty-schedule').hide();
             }
           } else {
-            unit.due = date + ' ' + time;
-            if (unit.category === "sequential") {
-              self.updateChildrenDates(unit, what, unit.due);
-            }
+            // if setting date of chapter no need of validation, because chapter only has start date.
+            self.setDateOfUnitAndReRenderView(dateType, newDate, unit, modal);
           }
-          modal.find('.close-modal').click();
-          self.dirty = true;
-          self.schedule_collection.set(self.schedule);
-          self.render();
         });
       };
     },
 
-    updateChildrenDates: function(sequential, date_type, date) {
+    setDateOfUnitAndReRenderView: function(dateType, date, unit, modal) {
+      // set start or due date on schedule tree and ask user to save changes
+      if (dateType === 'start') {
+        self.updateStartDateOfUnit(unit, date);
+      } else {
+        self.updateDueDateOfUnit(unit, date);
+      }
+
+      modal.find('.close-modal').click();
+      self.dirty = true;
+      self.schedule_collection.set(self.schedule);
+      self.render();
+    },
+
+    updateStartDateOfUnit: function(unit, date) {
+      // sets start date of a unit, unit can be chapter or subsection. if
+      // unit is subsection aka sequential then it will also update start date
+      // of all its children.
+      unit.start = date;
+      if (unit.category === "sequential") {
+        self.updateCorrespondingDateOfVerticals(unit, "start");
+      } else if (unit.category === "chapter") {
+        self.updateStartDateOfSequentialsAndVerticalsOfAChapter(unit);
+      }
+    },
+
+    updateDueDateOfUnit: function(unit, date) {
+      // sets due date of a unit (subsection). After update it will update
+      // due date of all children of selected unit.
+      unit.due = date;
+      if (unit.category === "sequential") {
+        self.updateCorrespondingDateOfVerticals(unit, "due");
+      }
+    },
+
+    updateCorrespondingDateOfVerticals: function(sequential, date_type) {
       // This code iterates the children (aka verticals) of a sequential.
       // It updates start and due dates to corresponding dates
       // of sequential (parent).
-      _.forEach(sequential.children, function (unit) {
+      _.forEach(sequential.children, function (vertical) {
         if (date_type === 'start') {
-          unit.start = date;
+          vertical.start = sequential.start;
         } else {
-          unit.due = date;
+          vertical.due = sequential.due;
+        }
+      });
+    },
+
+    updateStartDateOfSequentialsAndVerticalsOfAChapter: function(chapter) {
+      // This code iterates all children of a chapter (aka section) and
+      // updates start date only if due date is not set on that children.
+      _.forEach(chapter.children, function (sequential) {
+        if (_.isUndefined(sequential.due) || _.isEmpty(sequential.due)) {
+          sequential.start = chapter.start;
+
+          _.forEach(sequential.children, function (vertical) {
+            if (_.isUndefined(vertical.due) || _.isEmpty(vertical.due)) {
+              vertical.start = chapter.start;
+            }
+          });
         }
       });
     },

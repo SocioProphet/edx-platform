@@ -489,7 +489,8 @@ def get_ccx_schedule(course, ccx):
                     'hidden': hidden,
                 }
             if depth < 3:
-                children = tuple(visit(child, depth + 1))
+                children = list(visit(child, depth + 1))
+                children.sort(key=lambda obj: obj['start'])
                 if children:
                     visited['children'] = children
                     yield visited
@@ -497,7 +498,9 @@ def get_ccx_schedule(course, ccx):
                 yield visited
 
     with disable_overrides():
-        return tuple(visit(course))
+        schedule_tree = list(visit(course))
+        schedule_tree.sort(key=lambda obj: obj['start'])
+        return schedule_tree
 
 
 @ensure_csrf_cookie
