@@ -841,6 +841,36 @@ class TestCoachDashboard(CcxTestCase, LoginEnrollmentTestCase):
             ).exists()
         )
 
+    @ddt.data(
+        ("renamed_ccx", "ok"),
+        ("", "Unable to save display name, name parameter must be a valid string")
+    )
+    @ddt.unpack
+    def test_rename_ccx(self, new_ccx_name, response_message):
+        self.make_coach()
+        ccx = self.make_ccx()
+
+        expected_response = {
+            "status": response_message
+        }
+
+        url = reverse(
+            'rename_ccx',
+            kwargs={
+                'course_id': CCXLocator.from_course_locator(
+                    self.course.id, ccx.id)
+            }
+        )
+
+        data = {
+            "name": new_ccx_name
+        }
+        response = self.client.post(url, data=data, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        response_json = json.loads(response.content)
+        self.assertEqual(response_json, expected_response)
+
 
 GET_CHILDREN = XModuleMixin.get_children
 

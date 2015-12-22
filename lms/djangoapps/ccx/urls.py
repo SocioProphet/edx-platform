@@ -25,6 +25,8 @@ urlpatterns = patterns(
     url(r'^ccx_gradebook/(?P<offset>[0-9]+)$',
         'ccx.views.ccx_gradebook', name='ccx_gradebook'),
 
+    url(r'^rename_ccx$', 'ccx.views.rename_ccx', name='rename_ccx'),
+
     url(r'^ccx_grades.csv$',
         'ccx.views.ccx_grades_csv', name='ccx_grades_csv'),
     url(r'^ccx_set_grading_policy$',

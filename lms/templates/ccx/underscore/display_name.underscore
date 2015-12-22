@@ -1,0 +1,19 @@
+<% if (editDisplayName) { %>
+  <input type='text' value='<%= displayName %>' class='form-control edit-ccx-display-name' />
+<% } else { %>
+ <h1 class="ccx-display-name-heading">
+   <%
+     // Translators: Custom Courses for edX (CCX) is an edX feature for re-using course content. ccx_display_name is the display name of CCX.
+   %>
+   <p>
+     <%- interpolate(gettext('%(ccxDisplayName)s - Coach Dashboard'), {ccxDisplayName: displayName}, true) %> <span class="incontext-editor-action-wrapper">
+        <a href="#"
+          class="action-edit action-inline xblock-field-value-edit incontext-editor-open-action ccx-edit-display_name-btn"
+          title="Edit the name">
+            <i class="icon fa fa-pencil ccx-edit-display_name-btn" aria-hidden="true"></i>
+            <span class="sr"><%- gettext('Click to edit ccx display name') %></span>
+        </a>
+     </span>
+   </p>
+ </h1>
+<% } %>

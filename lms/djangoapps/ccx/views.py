@@ -10,6 +10,7 @@ import pytz
 
 from copy import deepcopy
 from cStringIO import StringIO
+from util.json_request import JsonResponse
 
 from django.conf import settings
 from django.core.urlresolvers import reverse
@@ -32,6 +33,7 @@ from courseware.courses import get_course_by_id
 from courseware.field_overrides import disable_overrides
 from courseware.grades import iterate_grades_for
 from edxmako.shortcuts import render_to_response
+from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from opaque_keys.edx.keys import CourseKey
 from ccx_keys.locator import CCXLocator
 from student.roles import CourseCcxCoachRole
@@ -154,10 +156,10 @@ def dashboard(request, course, ccx=None):
         context['grading_policy'] = json.dumps(grading_policy, indent=4)
         context['grading_policy_url'] = reverse(
             'ccx_set_grading_policy', kwargs={'course_id': ccx_locator})
+        context['rename_ccx_url'] = reverse('rename_ccx', kwargs={'course_id': ccx_locator})
 
         with ccx_course(ccx_locator) as course:
             context['course'] = course
-
     else:
         context['create_ccx_url'] = reverse(
             'create_ccx', kwargs={'course_id': course.id})
@@ -559,3 +561,35 @@ def ccx_grades_csv(request, course, ccx=None):
         response['Content-Disposition'] = 'attachment'
 
         return response
+
+
+@ensure_csrf_cookie
+@cache_control(no_cache=True, no_store=True, must_revalidate=True)
+@coach_dashboard
+def rename_ccx(request, course, ccx=None):
+    """
+    Rename ccx display name.
+    """
+    if not ccx:
+        return JsonResponse(
+            {"status": _("CCX not found.")},
+            status=404
+        )
+
+    display_name = request.POST.get('name')
+
+    if display_name:
+        ccx.display_name = display_name
+        ccx.save()
+        ccx_locator = CCXLocator.from_course_locator(course.id, unicode(ccx.id))
+        ccx_course_overview = CourseOverview.get_from_id(ccx_locator)
+
+        # delete ccx (course) from cache, so that new ccx name can be seen on student dashboard.
+        ccx_course_overview.delete()
+
+        return JsonResponse({"status": _("ok")}, status=200)
+
+    return JsonResponse(
+        {"status": _("Unable to save display name, name parameter must be a valid string")},
+        status=400
+    )

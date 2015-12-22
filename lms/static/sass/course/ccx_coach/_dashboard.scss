@@ -126,3 +126,279 @@ button.ccx-button-link {
 .ccx-manage-student-form input#student-id {
     width: 60%;
 }
+
+input.edit-ccx-display-name {
+    width: 30%;
+    @include font-size(15);
+    background: #FCFCFC none repeat scroll 0% 0%;
+    border: 1px solid #E7E6E6;
+    box-sizing: border-box;
+    margin: 5px 0 5px 0;
+    color: #34383A;
+    display: inline-block;
+    line-height: normal;
+    transition: all 0.125s ease-in-out 0s;
+    padding: 5px 10px 5px 10px;
+    &:focus {
+        border-color: #0ea6ec;
+        color: #282c2e;
+        outline: 0;
+    }
+    &:disabled {
+        border-color: #cfd8dc;
+        background: #e7ecee;
+        cursor: not-allowed;
+    }
+}
+
+button.ccx-save-display_name,
+button.ccx-cancel-display_name {
+    vertical-align: middle;
+    -webkit-transform: translateY(-50%);
+    -ms-transform: translateY(-50%);
+    transform: translateY(50%);
+}
+
+.ccx-display-name-heading {
+    cursor: pointer;
+}
+
+// bottom notification imported from cms
+// ====================
+
+
+.wrapper-notification {
+    bottom: -($ui-notification-height);
+
+    // varying animations
+    &.is-shown {
+      @include animation(notificationSlideUp $tmg-s1 ease-in-out 1);
+      @include animation-fill-mode(forwards);
+    }
+
+    &.is-hiding {
+      @include animation(notificationSlideDown $tmg-s1 ease-in-out 1);
+      @include animation-fill-mode(forwards);
+    }
+  }
+
+// shared
+.wrapper-notification{
+  @include box-sizing(border-box);
+
+  .copy {
+    @extend %t-copy-sub1;
+  }
+}
+
+.wrapper-notification{
+  background: $gray-d3;
+
+  .copy {
+    color: $gray-l2;
+
+    .title {
+      color: $white;
+    }
+
+    .nav-actions {
+
+      .action-primary {
+        color: $gray-d4;
+      }
+    }
+  }
+}
+
+// ====================
+
+// notifications
+.wrapper-notification {
+  @extend %ui-depth5;
+  @include clearfix();
+  box-shadow: 0 -1px 3px $shadow, inset 0 3px 1px $blue;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  padding: $baseline ($baseline*2);
+
+  &.wrapper-notification-mini {
+    box-shadow: 0 -1px 3px $shadow, inset 0 3px 1px $pink;
+  }
+
+  // shorter/status notifications
+  &.wrapper-notification-status {
+    @include border-top-radius(3px);
+    right: ($baseline);
+    width: auto;
+    border: 4px solid $black;
+    border-bottom: none;
+    padding: ($baseline/2);
+
+    .notification {
+      @include box-sizing(border-box);
+      @include clearfix();
+      width: 100%;
+      max-width: none;
+      min-width: none;
+
+      .feedback-symbol, .copy {
+        float: none;
+        display: inline-block;
+        vertical-align: middle;
+      }
+
+      .feedback-symbol {
+        width: $baseline;
+        height: ($baseline*1.25);
+        margin-right: ($baseline/4);
+        line-height: 30px;
+      }
+
+      .copy {
+
+      }
+    }
+  }
+}
+
+%cont-text-sr {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+}
+
+%cont-truncated {
+  @include box-sizing(border-box);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.notification {
+  @include box-sizing(border-box);
+  @include clearfix();
+  margin: 0 auto;
+  width: flex-grid(12);
+  max-width: $fg-max-width;
+  min-width: $fg-min-width;
+  padding: 0px;
+
+  strong {
+    @extend %t-strong;
+  }
+
+  .feedback-symbol, .copy {
+    float: left;
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  .feedback-symbol {
+    @include transition (color $tmg-f1 ease-in-out 0s);
+    @extend %t-icon3;
+    width: flex-grid(1, 12);
+    height: ($baseline*1.25);
+    margin-top: ($baseline/4);
+    margin-right: flex-gutter();
+    text-align: right;
+    color: $white;
+  }
+
+  .copy {
+    @extend %t-copy-sub1;
+    width: flex-grid(10, 12);
+    color: $gray-l2;
+
+    .title {
+      @extend %t-title7;
+      margin-bottom: 0;
+      color: $white;
+    }
+  }
+
+  &.mini {
+    width: auto;
+    max-width: none;
+    min-width: 0;
+
+    .feedback-symbol {
+      @include animation(rotateCW $tmg-s3 linear infinite);
+      width: 25px;
+      margin: -4px 10px 0 0;
+      @include transform-origin(52% 60%);
+    }
+
+    .copy {
+      width: auto;
+    }
+
+    .title {
+      @extend %cont-truncated;
+    }
+
+    .copy p {
+      @extend %cont-text-sr;
+    }
+  }
+}
+
+// button with no button shell until hover for understated actions
+
+// pill button
+%ui-btn-pill {
+  border-radius: ($baseline/5);
+}
+
+%ui-btn-non {
+  @include transition(all .15s);
+  @extend %ui-btn-pill;
+  @include transition(all $tmg-f2 linear 0s);
+  display: inline-block;
+  vertical-align: middle;
+  border: none;
+  padding: 3px ($baseline/2);
+  background: none;
+  color: $gray-l1;
+
+  &:hover, &:focus {
+    background-color: $gray-l1;
+    color: $white;
+  }
+
+  span {
+    @extend %cont-text-sr;
+  }
+}
+
+%ui-btn-non-blue {
+  @extend %ui-btn-non;
+
+  &:hover, &:focus {
+    background-color: $blue;
+    color: $white;
+  }
+}
+
+.incontext-editor-open-action {
+    @extend %ui-btn-non-blue;
+    @extend %t-copy-base;
+    padding-top: ($baseline/10);
+
+    .icon.icon {
+      vertical-align: baseline;
+    }
+}
+
+a.action-edit.action-inline {
+  .icon {
+    @include margin-right(0);
+    @include transform(none);
+    vertical-align: middle;
+  }
+}
