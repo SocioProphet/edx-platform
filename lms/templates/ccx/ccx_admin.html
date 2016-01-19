@@ -1,0 +1,46 @@
+<%!
+  from django.utils.translation import ugettext as _
+  from django.core.urlresolvers import reverse
+%>
+
+% if messages:
+  <ul class="messages">
+    % for message in messages:
+      % if message.tags:
+        <li class="${message.tags}">${message}</li>
+      % else:
+        <li>${message}</li>
+      % endif
+    % endfor
+  </ul>
+% endif
+
+<section>
+  <form action="${create_ccx_url}" method="POST" class="ccx-form" onsubmit="return validateForm()">
+    <input type="hidden" name="csrfmiddlewaretoken" value="${csrf_token}"/>
+    <p id="label_new_ccx" class="text-helper">
+      ${_("Enter CCX name and click button below to create a new CCX on the same master course.")}
+    </p>
+    <br/>
+    <div class="field">
+      <label class="sr" for="ccx_name" class="form-label">${_('Name your CCX')}</label>
+      <input name="name" id="new_ccx_name" aria-describedby="label_new_ccx"
+             placeholder="${_('Name your CCX')}" class="enter-ccx-name" />
+    </div>
+    <br/>
+    <div class="field">
+      <button id="create-ccx">${_('Coach a new Custom Course for EdX')}</button>
+    </div>
+  </form>
+</section>
+
+<script>
+function validateForm() {
+    var newCCXName = $('#new_ccx_name').val();
+    if (!newCCXName || newCCXName === "") {
+        alert("${_('Please enter a valid CCX name.')}");
+        return false;
+    }
+  return true;
+}
+</script>

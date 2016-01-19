@@ -67,6 +67,11 @@ from openedx.core.djangolib.js_utils import (
         <li class="nav-item">
           <a href="#" data-section="grading_policy">${_("Grading Policy")}</a>
         </li>
+        %if course and hasattr(course, 'ccx_connector') and course.ccx_connector:
+          <li class="nav-item">
+            <a href="#" data-section="ccx_admin">${_("CCX Admin")}</a>
+          </li>
+        %endif
       </ul>
       <section id="membership" class="idash-section">
         <%include file="enrollment.html" args="" />
@@ -80,6 +85,11 @@ from openedx.core.djangolib.js_utils import (
       <section id="grading_policy" class="idash-section">
         <%include file="grading_policy.html" args="" />
       </section>
+      %if course and hasattr(course, 'ccx_connector') and course.ccx_connector:
+        <section id="ccx_admin" class="idash-section">
+          <%include file="ccx_admin.html" args="" />
+        </section>
+      %endif
       %endif
 
     </section>
