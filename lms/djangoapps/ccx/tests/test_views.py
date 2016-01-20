@@ -337,6 +337,10 @@ class TestCoachDashboard(CcxTestCase, LoginEnrollmentTestCase):
     def test_create_multiple_ccx(self, ccx_name):
         self.test_create_ccx(ccx_name)
 
+    @ddt.data("CCX demo 1", "CCX demo 2", "CCX demo 3")
+    def test_create_multiple_ccx(self, ccx_name):
+        self.test_create_ccx(ccx_name)
+
     def test_get_date(self):
         """
         Assert that get_date returns valid date.
