@@ -76,6 +76,19 @@ def get_role_ids(course_id):
     return dict([(role.name, list(role.users.values_list('id', flat=True))) for role in roles])
 
 
+def assign_discussion_role(course_key, user, role=FORUM_ROLE_STUDENT):
+    """
+    Assigns discussion role to user, default role is 'FORUM_ROLE_STUDENT'
+
+    Args:
+      user (User): The user to assign role.
+      course_key (CourseKey): A key for the course to which role will assign.
+      role (str): Roles on discussion forum.
+    """
+    role, __ = Role.objects.get_or_create(course_id=course_key, name=role)
+    user.roles.add(role)
+
+
 def has_discussion_privileges(user, course_id):
     """
     Returns True if the user is privileged in teams discussions for
@@ -794,6 +807,9 @@ def is_discussion_enabled(course_id):
     Return True if Discussion is enabled for a course; else False
     """
     if settings.FEATURES.get('CUSTOM_COURSES_EDX', False):
-        if get_current_ccx(course_id):
+        ccx = get_current_ccx(course_id)
+        if ccx and not ccx.enable_discussion:
+            # If course is ccx and enable_discussion is false the hide discussion tab
             return False
     return settings.FEATURES.get('ENABLE_DISCUSSION_SERVICE')
+

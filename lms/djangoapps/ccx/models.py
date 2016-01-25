@@ -23,6 +23,7 @@ class CustomCourseForEdX(models.Model):
     """
     course_id = CourseKeyField(max_length=255, db_index=True)
     display_name = models.CharField(max_length=255)
+    enable_discussion = models.BooleanField()
     coach = models.ForeignKey(User, db_index=True)
 
     class Meta(object):

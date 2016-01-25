@@ -16,6 +16,10 @@ from django.core.validators import validate_email
 from courseware.courses import get_course_by_id
 from courseware.model_data import FieldDataCache
 from courseware.module_render import get_module_for_descriptor
+from django_comment_common.utils import seed_permissions_roles
+from django_comment_common.models import FORUM_ROLE_ADMINISTRATOR
+from lms.djangoapps.django_comment_client.utils import assign_discussion_role
+
 from instructor.enrollment import (
     enroll_email,
     unenroll_email,
@@ -260,3 +264,16 @@ def is_email(identifier):
     except ValidationError:
         return False
     return True
+
+
+def prepare_and_assign_role_discussion(course_key, coach):
+    """
+    Assigns admin role to ccx coach on discussion forum.
+
+    Args:
+      coach (User): CCX Admin.
+      course_key (CourseKey): A key for the course to which role will assign.
+      role (str): Roles on discussion forum.
+    """
+    seed_permissions_roles(course_key)
+    assign_discussion_role(course_key, coach, role=FORUM_ROLE_ADMINISTRATOR)
