@@ -17,6 +17,7 @@ from courseware.tests.helpers import LoginEnrollmentTestCase
 from courseware.tabs import get_course_tab_list
 from django.conf import settings
 from django.core.urlresolvers import reverse, resolve
+from django_comment_common.models import FORUM_ROLE_ADMINISTRATOR
 from django.utils.timezone import UTC
 from django.test.utils import override_settings
 from django.test import RequestFactory
@@ -56,6 +57,7 @@ from lms.djangoapps.ccx.tests.utils import (
 )
 from lms.djangoapps.ccx.utils import is_email
 from lms.djangoapps.ccx.views import get_date
+from lms.djangoapps.django_comment_client.utils import has_forum_access
 
 
 def intercept_renderer(path, context):
@@ -221,6 +223,7 @@ class TestCoachDashboard(CcxTestCase, LoginEnrollmentTestCase):
         # assert ccx creator has role=ccx_coach
         role = CourseCcxCoachRole(course_key)
         self.assertTrue(role.has_user(self.coach))
+        self.assertTrue(has_forum_access(self.coach.username, course_key, FORUM_ROLE_ADMINISTRATOR))
 
     def test_get_date(self):
         """
