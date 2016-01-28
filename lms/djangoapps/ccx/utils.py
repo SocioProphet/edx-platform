@@ -8,6 +8,7 @@ import logging
 import pytz
 from contextlib import contextmanager
 
+from django_comment_common.utils import are_permissions_roles_seeded
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext as _
@@ -275,5 +276,6 @@ def prepare_and_assign_role_discussion(course_key, coach):
       course_key (CourseKey): A key for the course to which role will assign.
       role (str): Roles on discussion forum.
     """
-    seed_permissions_roles(course_key)
-    assign_discussion_role(course_key, coach, role=FORUM_ROLE_ADMINISTRATOR)
+    if not are_permissions_roles_seeded(course_key):
+        seed_permissions_roles(course_key)
+        assign_discussion_role(course_key, coach, role=FORUM_ROLE_ADMINISTRATOR)

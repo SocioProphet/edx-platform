@@ -58,6 +58,9 @@ from django.core.urlresolvers import reverse
         <li class="nav-item">
           <a href="#" data-section="grading_policy">${_("Grading Policy")}</a>
         </li>
+        <li class="nav-item">
+          <a href="#" data-section="discussion">${_("Discussion Setting")}</a>
+        </li>
       </ul>
       <section id="membership" class="idash-section">
         <%include file="enrollment.html" args="" />
@@ -70,6 +73,9 @@ from django.core.urlresolvers import reverse
       </section>
       <section id="grading_policy" class="idash-section">
         <%include file="grading_policy.html" args="" />
+      </section>
+      <section id="discussion" class="idash-section">
+        <%include file="disucssion_settings.html" args="" />
       </section>
       %endif
 

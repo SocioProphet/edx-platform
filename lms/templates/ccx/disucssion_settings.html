@@ -1,0 +1,20 @@
+<%! from django.utils.translation import ugettext as _ %>
+
+
+<form action="${discussion_forum_settings_url}" method="post" id="ccx-discussion-settings">
+  <input type="hidden" name="csrfmiddlewaretoken" value="${ csrf_token }">
+  <p id="label_discussion_settings_helper" class="text-helper">
+    ${_("Enable or disable discussion forum on CCX by checking or unchecking below checkbox.")}
+  </p>
+  <br/><br/>
+  %if ccx.enable_discussion:
+    <input type="checkbox" name="enable-discussion" id="enable-discussion" value="enable-discussion"
+      checked="yes" onChange="$('#ccx-discussion-settings').submit()"
+      aria-describedby="label_discussion_settings_helper"/>
+    <label for="enable-discussion" style="display: inline">${_("Discussion Forum Enabled")}</label>
+  %else:
+    <input type="checkbox" name="enable-discussion" id="enable-discussion" value="enable-discussion"
+      onChange="$('#ccx-discussion-settings').submit()" aria-describedby="label_discussion_settings_helper"/>
+    <label for="enable-discussion" style="display: inline">${_("Discussion Forum Disabled")}</label>
+  %endif
+</form>

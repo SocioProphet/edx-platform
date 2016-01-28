@@ -53,13 +53,13 @@ from lms.djangoapps.ccx.overrides import (
 )
 from lms.djangoapps.ccx.utils import (
     assign_coach_role_to_ccx,
-    prepare_and_assign_role_discussion,
     ccx_course,
     ccx_students_enrolling_center,
     get_ccx_for_coach,
     get_date,
     parse_date,
     prep_course_for_grading,
+    prepare_and_assign_role_discussion
 )
 
 log = logging.getLogger(__name__)
@@ -146,7 +146,8 @@ def dashboard(request, course, ccx=None):
         context['grading_policy'] = json.dumps(grading_policy, indent=4)
         context['grading_policy_url'] = reverse(
             'ccx_set_grading_policy', kwargs={'course_id': ccx_locator})
-
+        context['discussion_forum_settings_url'] = reverse(
+            'discussion_forum_settings_ccx', kwargs={'course_id': ccx_locator})
     else:
         context['create_ccx_url'] = reverse(
             'create_ccx', kwargs={'course_id': course.id})
@@ -542,3 +543,28 @@ def ccx_grades_csv(request, course, ccx=None):
         response['Content-Disposition'] = 'attachment'
 
         return response
+
+
+@ensure_csrf_cookie
+@cache_control(no_cache=True, no_store=True, must_revalidate=True)
+@coach_dashboard
+def discussion_forum_settings_ccx(request, course, ccx=None):
+    """
+    Manage the enrollment of individual students in a CCX
+    """
+    if not ccx:
+        raise Http404
+
+    enable_discussion = request.POST.get('enable-discussion', None)
+    ccx_locator = CCXLocator.from_course_locator(course.id, unicode(ccx.id))
+
+    if enable_discussion:
+        ccx.enable_discussion = True
+        ccx.save()
+        prepare_and_assign_role_discussion(ccx_locator, request.user)
+    else:
+        ccx.enable_discussion = False
+        ccx.save()
+
+    url = reverse('ccx_coach_dashboard', kwargs={'course_id': ccx_locator})
+    return redirect(url)

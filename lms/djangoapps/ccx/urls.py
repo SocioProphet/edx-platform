@@ -19,6 +19,9 @@ urlpatterns = patterns(
     url(r'^ccx_manage_student$',
         'ccx.views.ccx_student_management', name='ccx_manage_student'),
 
+    url(r'^discussion_forum_settings_ccx',
+        'ccx.views.discussion_forum_settings_ccx', name='discussion_forum_settings_ccx'),
+
     # Grade book
     url(r'^ccx_gradebook$',
         'ccx.views.ccx_gradebook', name='ccx_gradebook'),
