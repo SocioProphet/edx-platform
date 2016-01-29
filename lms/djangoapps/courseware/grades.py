@@ -256,11 +256,15 @@ def _grade(student, request, course, keep_raw_scores):
                         )
                     )
 
-                _, graded_total = graders.aggregate_scores(scores, section_name)
+                _, graded_total = graders.aggregate_scores(
+                    scores,
+                    section_name,
+                    section_location=section_descriptor.location
+                )
                 if keep_raw_scores:
                     raw_scores += scores
             else:
-                graded_total = Score(0.0, 1.0, True, section_name, None)
+                graded_total = Score(0.0, 1.0, True, section_name, section_descriptor.location)
 
             #Add the graded total to totaled_scores
             if graded_total.possible > 0:
