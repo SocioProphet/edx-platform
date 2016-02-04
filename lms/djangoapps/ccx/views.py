@@ -555,7 +555,7 @@ def discussion_forum_settings_ccx(request, course, ccx=None):
     if not ccx:
         raise Http404
 
-    enable_discussion = request.POST.get('enable-discussion', None)
+    enable_discussion = 'enable-discussion' in request.POST
     ccx_locator = CCXLocator.from_course_locator(course.id, unicode(ccx.id))
 
     if enable_discussion:

@@ -693,6 +693,34 @@ class TestCoachDashboard(CcxTestCase, LoginEnrollmentTestCase):
             ).exists()
         )
 
+    @ddt.data(True, False)
+    def test_discussion_forum_settings_ccx(self, enable_discussion_flag):
+        self.make_coach()
+        ccx = CustomCourseForEdX(
+            course_id=self.course.id,
+            coach=self.coach,
+            display_name="Test CCX")
+        ccx.save()
+        course_key = CCXLocator.from_course_locator(self.course.id, ccx.id)
+
+        url = reverse(
+            'discussion_forum_settings_ccx',
+            kwargs={'course_id': course_key}
+        )
+
+        if enable_discussion_flag:
+            data = {
+                'enable-discussion': enable_discussion_flag
+            }
+            response = self.client.post(url, data=data, follow=True)
+        else:
+            response = self.client.post(url, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+
+        ccx = CustomCourseForEdX.objects.get()
+        self.assertEqual(ccx.enable_discussion, enable_discussion_flag)
+
 
 GET_CHILDREN = XModuleMixin.get_children
 
