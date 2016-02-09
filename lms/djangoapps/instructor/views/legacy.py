@@ -504,7 +504,7 @@ def _do_remote_gradebook(user, course, action, args=None, files=None):
         resp = requests.post(rgburl, data=data, verify=False, files=files)
         retdict = json.loads(resp.content)
     except Exception as err:  # pylint: disable=broad-except
-        msg = _("Failed to communicate with gradebook server at {url}").format(url=rgburl) + "<br/>"
+        msg = _("Failed to communicate with gradebook server") + "<br/>"
         msg += _("Error: {err}").format(err=err)
         msg += "<br/>resp={resp}".format(resp=resp.content)
         msg += "<br/>data={data}".format(data=data)
