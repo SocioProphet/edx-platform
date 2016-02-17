@@ -56,7 +56,7 @@ from lms.djangoapps.ccx.utils import (
     assign_coach_role_to_ccx,
     ccx_course,
     ccx_students_enrolling_center,
-    get_ccx_for_coach,
+    get_ccxs_for_coach,
     get_ccx_by_ccx_id,
     get_ccx_creation_dict,
     get_date,
@@ -120,22 +120,20 @@ def dashboard(request, course, ccx=None):
     """
     # right now, we can only have one ccx per user and course
     # so, if no ccx is passed in, we can sefely redirect to that
-    if ccx is None:
-        ccx = get_ccx_for_coach(course, request.user)
-        if ccx:
-            url = reverse(
-                'ccx_coach_dashboard',
-                kwargs={'course_id': CCXLocator.from_course_locator(course.id, ccx.id)}
-            )
-            return redirect(url)
 
     context = {
         'course': course,
-        'ccx': ccx,
     }
     context.update(get_ccx_creation_dict(course))
 
-    if ccx:
+    if ccx is None:
+        context['create_ccx_url'] = reverse(
+            'create_ccx', kwargs={'course_id': course.id})
+        context['list_ccx'] = get_ccxs_for_coach(course, request.user)
+
+        return render_to_response('ccx/ccx_admin.html', context)
+    else:
+        context['ccx'] = ccx
         ccx_locator = CCXLocator.from_course_locator(course.id, unicode(ccx.id))
         # At this point we are done with verification that current user is ccx coach.
         assign_coach_role_to_ccx(ccx_locator, request.user, course.id)
@@ -154,8 +152,6 @@ def dashboard(request, course, ccx=None):
         context['grading_policy'] = json.dumps(grading_policy, indent=4)
         context['grading_policy_url'] = reverse(
             'ccx_set_grading_policy', kwargs={'course_id': ccx_locator})
-        context['create_ccx_url'] = reverse(
-            'create_ccx', kwargs={'course_id': course.id})
 
         with ccx_course(ccx_locator) as course:
             context['course'] = course
@@ -216,7 +212,7 @@ def create_ccx(request, course, ccx=None):
 
     ccx_id = CCXLocator.from_course_locator(course.id, ccx.id)
 
-    url = reverse('ccx_coach_dashboard', kwargs={'course_id': ccx_id})
+    url = reverse('ccx_coach_dashboard', kwargs={'course_id': course.id})
 
     # Enroll the coach in the course
     email_params = get_email_params(course, auto_enroll=True, course_key=ccx_id, display_name=ccx.display_name)

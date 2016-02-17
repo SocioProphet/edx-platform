@@ -1,37 +1,79 @@
+<%inherit file="/main.html" />
+<%namespace name='static' file='/static_content.html'/>
 <%!
-  from django.utils.translation import ugettext as _
-  from django.core.urlresolvers import reverse
+from django.utils.translation import ugettext as _
+from django.core.urlresolvers import reverse
 %>
 
-% if messages:
-  <ul class="messages">
-    % for message in messages:
-      % if message.tags:
-        <li class="${message.tags}">${message}</li>
-      % else:
-        <li>${message}</li>
-      % endif
-    % endfor
-  </ul>
-% endif
+<%block name="pagetitle">${_("CCX Coach Dashboard")}</%block>
+<%block name="nav_skip">#ccx-coach-dashboard-content</%block>
 
-<section>
-  <form action="${create_ccx_url}" method="POST" class="ccx-form" onsubmit="return validateForm()">
-    <input type="hidden" name="csrfmiddlewaretoken" value="${csrf_token}"/>
-    <p id="label_new_ccx" class="text-helper">
-      ${_("Enter CCX name and click button below to create a new CCX on the same master course.")}
-    </p>
-    <br/>
-    <div class="field">
-      <label class="sr" for="ccx_name" class="form-label">${_('Name your CCX')}</label>
-      <input name="name" id="new_ccx_name" aria-describedby="label_new_ccx"
-             placeholder="${_('Name your CCX')}" class="enter-ccx-name" />
-    </div>
-    <br/>
-    <div class="field">
-      <button id="create-ccx">${_('Coach a new Custom Course for EdX')}</button>
-    </div>
-  </form>
+<%block name="headextra">
+  <%static:css group='style-course-vendor'/>
+  <%static:css group='style-vendor-tinymce-content'/>
+  <%static:css group='style-vendor-tinymce-skin'/>
+  <%static:css group='style-course'/>
+  <%static:js group='ccx'/>
+</%block>
+
+<%include file="/courseware/course_navigation.html" args="active_page='ccx_coach'" />
+<section class="container">
+  <div class="instructor-dashboard-wrapper-2">
+    <section class="instructor-dashboard-content-2">
+      % if list_ccx:
+        <h2>My CCX LIST:</h2>
+        <table class="table table-simplified table-cozy">
+          <thead>
+            <tr>
+              <th>${_("CCX ID")}</th>
+              <th>${_("CCX Dashboard URL")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            % for ccx in list_ccx:
+              <tr>
+                <td>${ccx['ccx_id']}</td>
+                <td><a href="${ccx['ccx_dashboard_url']}">${ccx['display_name'] or course.display_name}</a></td>
+              </tr>
+            % endfor
+          </tbody>
+        </table>
+        <hr/>
+      % endif
+      <br/>
+      <h2>Create New CCX:</h2>
+      % if messages:
+        <ul class="messages">
+          % for message in messages:
+            % if message.tags:
+              <li class="${message.tags}">${message}</li>
+            % else:
+              <li>${message}</li>
+            % endif
+          % endfor
+        </ul>
+      % endif
+
+      <section>
+        <form action="${create_ccx_url}" method="POST" class="ccx-form" onsubmit="return validateForm()">
+          <input type="hidden" name="csrfmiddlewaretoken" value="${csrf_token}"/>
+          <p id="label_new_ccx" class="text-helper">
+            ${_("Enter CCX name and click button below to create a new CCX on the same master course.")}
+          </p>
+          <br/>
+          <div class="field">
+            <label class="sr" for="ccx_name" class="form-label">${_('Name your CCX')}</label>
+            <input name="name" id="new_ccx_name" aria-describedby="label_new_ccx"
+                   placeholder="${_('Name your CCX')}" class="enter-ccx-name" />
+          </div>
+          <br/>
+          <div class="field">
+            <button id="create-ccx">${_('Coach a new Custom Course for EdX')}</button>
+          </div>
+        </form>
+      </section>
+   </section>
+ </div>
 </section>
 
 <script>

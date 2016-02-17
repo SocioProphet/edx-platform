@@ -10,11 +10,13 @@ from contextlib import contextmanager
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext as _
 from django.core.validators import validate_email
 from django.core.urlresolvers import reverse
 from smtplib import SMTPException
 
+from ccx_keys.locator import CCXLocator
 from courseware.courses import get_course_by_id
 from courseware.model_data import FieldDataCache
 from courseware.module_render import get_module_for_descriptor
@@ -145,20 +147,28 @@ def parse_date(datestring):
     return None
 
 
-def get_ccx_for_coach(course, coach):
+def get_ccxs_for_coach(course, coach):
     """
-    Looks to see if user is coach of a CCX for this course.  Returns the CCX or
-    None.
+    Returns list of ccx of a coach on given course.
     """
-    ccxs = CustomCourseForEdX.objects.filter(
-        course_id=course.id,
-        coach=coach
-    )
-    # XXX: In the future, it would be nice to support more than one ccx per
-    # coach per course.  This is a place where that might happen.
-    if ccxs.exists():
-        return ccxs[0]
-    return None
+    list_ccx = []
+    try:
+        ccxs = CustomCourseForEdX.objects.filter(
+            course_id=course.id,
+            coach=coach
+        )
+        for ccx in ccxs:
+            list_ccx.append({
+                "ccx_id": ccx.id,
+                "display_name": ccx.display_name,
+                "ccx_dashboard_url": reverse('ccx_coach_dashboard', kwargs={
+                    'course_id': CCXLocator.from_course_locator(course.id, ccx.id)
+                })
+            })
+
+    except CustomCourseForEdX.DoesNotExist:
+        return None
+    return list_ccx
 
 
 def get_ccx_by_ccx_id(course, coach, ccx_id):
