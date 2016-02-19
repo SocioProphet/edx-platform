@@ -15,7 +15,10 @@ from courseware.courses import get_course_by_id
 from courseware.tests.factories import StudentModuleFactory
 from courseware.tests.helpers import LoginEnrollmentTestCase
 from courseware.tabs import get_course_tab_list
-from instructor.access import list_with_level, allow_access
+from instructor.access import (
+    allow_access,
+    list_with_level,
+)
 
 from django.conf import settings
 from django.core.urlresolvers import reverse, resolve

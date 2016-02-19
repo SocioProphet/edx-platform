@@ -164,13 +164,77 @@ class TestStaffOnCCX(CcxTestCase):
 
     def test_reverse_add_master_course_staff_to_ccx(self):
         """
-        Test add staff of master course to ccx course
+        Test remove staff of master course to ccx course
         """
-        reverse_add_master_course_staff_to_ccx(self.course, self.ccx_locator, self.ccx.display_name)
+        add_master_course_staff_to_ccx(self.course, self.ccx_locator, self.ccx.display_name, send_email=False)
 
-        # assert that staff and instructors of master course has staff and instructor roles on ccx
         list_staff_master_course = list_with_level(self.course, 'staff')
         list_instructor_master_course = list_with_level(self.course, 'instructor')
+
+        with ccx_course(self.ccx_locator) as course_ccx:
+            list_staff_ccx_course = list_with_level(course_ccx, 'staff')
+            self.assertEqual(len(list_staff_master_course), len(list_staff_ccx_course))
+            self.assertEqual(list_staff_master_course[0].email, list_staff_ccx_course[0].email)
+
+            list_instructor_ccx_course = list_with_level(course_ccx, 'instructor')
+            self.assertEqual(len(list_instructor_ccx_course), len(list_instructor_master_course))
+            self.assertEqual(list_instructor_ccx_course[0].email, list_instructor_master_course[0].email)
+
+            # assert that role of staff and instructors of master course removed from ccx.
+            reverse_add_master_course_staff_to_ccx(
+                self.course, self.ccx_locator, self.ccx.display_name, send_email=False
+            )
+            list_staff_ccx_course = list_with_level(course_ccx, 'staff')
+            self.assertNotEqual(len(list_staff_master_course), len(list_staff_ccx_course))
+
+            list_instructor_ccx_course = list_with_level(course_ccx, 'instructor')
+            self.assertNotEqual(len(list_instructor_ccx_course), len(list_instructor_master_course))
+
+            for user in list_staff_master_course:
+                self.assertNotIn(user, list_staff_ccx_course)
+            for user in list_instructor_master_course:
+                self.assertNotIn(user, list_instructor_ccx_course)
+
+    def test_reverse_add_master_course_staff_to_ccx_idempotent(self):
+        """
+        Test remove staff of master course to ccx course
+        """
+        outbox = self.get_outbox()
+        self.assertEqual(len(outbox), 0)
+        add_master_course_staff_to_ccx(self.course, self.ccx_locator, self.ccx.display_name, send_email=False)
+
+        list_staff_master_course = list_with_level(self.course, 'staff')
+        list_instructor_master_course = list_with_level(self.course, 'instructor')
+
+        with ccx_course(self.ccx_locator) as course_ccx:
+            list_staff_ccx_course = list_with_level(course_ccx, 'staff')
+            self.assertEqual(len(list_staff_master_course), len(list_staff_ccx_course))
+            self.assertEqual(list_staff_master_course[0].email, list_staff_ccx_course[0].email)
+
+            list_instructor_ccx_course = list_with_level(course_ccx, 'instructor')
+            self.assertEqual(len(list_instructor_ccx_course), len(list_instructor_master_course))
+            self.assertEqual(list_instructor_ccx_course[0].email, list_instructor_master_course[0].email)
+
+            # assert that role of staff and instructors of master course removed from ccx.
+            reverse_add_master_course_staff_to_ccx(
+                self.course, self.ccx_locator, self.ccx.display_name, send_email=True
+            )
+            self.assertEqual(len(outbox), len(list_staff_master_course) + len(list_instructor_master_course))
+
+            list_staff_ccx_course = list_with_level(course_ccx, 'staff')
+            self.assertNotEqual(len(list_staff_master_course), len(list_staff_ccx_course))
+
+            list_instructor_ccx_course = list_with_level(course_ccx, 'instructor')
+            self.assertNotEqual(len(list_instructor_ccx_course), len(list_instructor_master_course))
+
+            for user in list_staff_master_course:
+                self.assertNotIn(user, list_staff_ccx_course)
+            for user in list_instructor_master_course:
+                self.assertNotIn(user, list_instructor_ccx_course)
+
+        # Run again
+        reverse_add_master_course_staff_to_ccx(self.course, self.ccx_locator, self.ccx.display_name)
+        self.assertEqual(len(outbox), len(list_staff_master_course) + len(list_instructor_master_course))
 
         with ccx_course(self.ccx_locator) as course_ccx:
             list_staff_ccx_course = list_with_level(course_ccx, 'staff')
@@ -178,6 +242,11 @@ class TestStaffOnCCX(CcxTestCase):
 
             list_instructor_ccx_course = list_with_level(course_ccx, 'instructor')
             self.assertNotEqual(len(list_instructor_ccx_course), len(list_instructor_master_course))
+
+            for user in list_staff_master_course:
+                self.assertNotIn(user, list_staff_ccx_course)
+            for user in list_instructor_master_course:
+                self.assertNotIn(user, list_instructor_ccx_course)
 
     def test_add_master_course_staff_to_ccx_display_name(self):
         """
@@ -193,6 +262,25 @@ class TestStaffOnCCX(CcxTestCase):
         self.assertEqual(len(outbox), 0)
         # give access to the course staff/instructor
         add_master_course_staff_to_ccx(self.course, self.ccx_locator, display_name)
+        self.assertEqual(len(outbox), len(list_staff_master_course) + len(list_instructor_master_course))
+        for email in outbox:
+            self.assertIn(display_name, email.subject)
+
+    def test_reverse_add_master_course_staff_to_ccx_display_name(self):
+        """
+        Test remove role of staff of master course on ccx course.
+        Specific test to check that a passed display name is in the
+        subject of the email sent to the unenrolled users.
+        """
+        outbox = self.get_outbox()
+        add_master_course_staff_to_ccx(self.course, self.ccx_locator, self.ccx.display_name, send_email=False)
+        # create a unique display name
+        display_name = 'custom_display_{}'.format(uuid.uuid4())
+        list_staff_master_course = list_with_level(self.course, 'staff')
+        list_instructor_master_course = list_with_level(self.course, 'instructor')
+        self.assertEqual(len(outbox), 0)
+        # give access to the course staff/instructor
+        reverse_add_master_course_staff_to_ccx(self.course, self.ccx_locator, display_name)
         self.assertEqual(len(outbox), len(list_staff_master_course) + len(list_instructor_master_course))
         for email in outbox:
             self.assertIn(display_name, email.subject)
@@ -243,4 +331,14 @@ class TestStaffOnCCX(CcxTestCase):
         outbox = self.get_outbox()
         self.assertEqual(len(outbox), 0)
         add_master_course_staff_to_ccx(self.course, self.ccx_locator, self.ccx.display_name, send_email=False)
+        self.assertEqual(len(outbox), 0)
+
+    def test_reverse_add_master_course_staff_to_ccx_no_email(self):
+        """
+        Test remove role of staff of master course on ccx course without
+        sending enrollment email.
+        """
+        outbox = self.get_outbox()
+        self.assertEqual(len(outbox), 0)
+        reverse_add_master_course_staff_to_ccx(self.course, self.ccx_locator, self.ccx.display_name, send_email=False)
         self.assertEqual(len(outbox), 0)

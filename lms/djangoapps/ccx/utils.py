@@ -343,7 +343,8 @@ def get_course_chapters(course_key):
 
 def add_master_course_staff_to_ccx(master_course, ccx_key, display_name, send_email=True):
     """
-    Added staff role on ccx to all the staff members of master course.
+    Add staff and instructor roles on ccx to all the staff and instructors members of master course.
+
     Arguments:
         master_course (CourseDescriptorWithMixins): Master course instance
         ccx_key (CCXLocator): CCX course key
@@ -389,7 +390,7 @@ def add_master_course_staff_to_ccx(master_course, ccx_key, display_name, send_em
 
 def reverse_add_master_course_staff_to_ccx(master_course, ccx_key, display_name, send_email=True):
     """
-    Remove staff of ccx.
+    Remove staff and instructor roles on ccx to all the staff and instructors members of master course.
 
     Arguments:
         master_course (CourseDescriptorWithMixins): Master course instance
@@ -400,27 +401,31 @@ def reverse_add_master_course_staff_to_ccx(master_course, ccx_key, display_name,
     list_instructor = list_with_level(master_course, 'instructor')
 
     with ccx_course(ccx_key) as course_ccx:
+        list_staff_ccx = list_with_level(course_ccx, 'staff')
+        list_instructor_ccx = list_with_level(course_ccx, 'instructor')
         email_params = get_email_params(course_ccx, auto_enroll=True, course_key=ccx_key, display_name=display_name)
         for staff in list_staff:
-            # allow 'staff' access on ccx to staff of master course
-            revoke_access(course_ccx, staff, 'staff')
+            if staff in list_staff_ccx:
+                # allow 'staff' access on ccx to staff of master course
+                revoke_access(course_ccx, staff, 'staff')
 
-            # Enroll the staff in the ccx
-            unenroll_email(
-                course_id=ccx_key,
-                student_email=staff.email,
-                email_students=send_email,
-                email_params=email_params,
-            )
+                # Enroll the staff in the ccx
+                unenroll_email(
+                    course_id=ccx_key,
+                    student_email=staff.email,
+                    email_students=send_email,
+                    email_params=email_params,
+                )
 
         for instructor in list_instructor:
-            # allow 'instructor' access on ccx to instructor of master course
-            revoke_access(course_ccx, instructor, 'instructor')
+            if instructor in list_instructor_ccx:
+                # allow 'instructor' access on ccx to instructor of master course
+                revoke_access(course_ccx, instructor, 'instructor')
 
-            # Enroll the instructor in the ccx
-            unenroll_email(
-                course_id=ccx_key,
-                student_email=instructor.email,
-                email_students=send_email,
-                email_params=email_params,
-            )
+                # Enroll the instructor in the ccx
+                unenroll_email(
+                    course_id=ccx_key,
+                    student_email=instructor.email,
+                    email_students=send_email,
+                    email_params=email_params,
+                )
