@@ -255,7 +255,7 @@ def instructor_dashboard(request, course_id):
                 )
             else:
                 aidx = allgrades['assignments'].index(aname)
-                datatable = {'header': [_('External email'), aname, _('max_pts'), _('normalize')]}
+                datatable = {'header': ['External email', aname, 'max_pts', 'normalize']}
                 ddata = []
                 # do one by one in case there is a student who has only partial grades
                 for student in allgrades['students']:
