@@ -430,7 +430,9 @@ def _grade(student, request, course, keep_raw_scores, field_data_cache, scores_c
                         )
                     )
 
-                __, graded_total = graders.aggregate_scores(scores, section_name)
+                __, graded_total = graders.aggregate_scores(
+                    scores, section_name, section_location=section_descriptor.location
+                )
                 if keep_raw_scores:
                     raw_scores += scores
             else:
