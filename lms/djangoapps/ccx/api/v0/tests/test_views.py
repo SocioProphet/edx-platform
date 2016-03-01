@@ -30,6 +30,7 @@ from rest_framework.test import APITestCase
 from courseware import courses
 from ccx_keys.locator import CCXLocator
 from student.models import CourseEnrollment
+from student.tests.factories import UserFactory
 from instructor.enrollment import (
     enroll_email,
     get_email_params,
@@ -66,9 +67,10 @@ class CcxRestApiTest(CcxTestCase, APITestCase):
         self.master_course_key_str = unicode(self.master_course_key)
         # OAUTH2 setup
         # create a specific user for the application
-        app_user = User.objects.create_user('test_app_user', 'test_app_user@openedx.org', 'test')
+        app_user = UserFactory(username='test_app_user', email='test_app_user@openedx.org', password='test')
         # add staff role to the app user
         CourseStaffRole(self.master_course_key).add_users(app_user)
+
         # create an oauth client app entry
         self.app_client = Client.objects.create(
             user=app_user,
@@ -172,7 +174,7 @@ class CcxListTest(CcxRestApiTest):
         Check authorization for staff users logged in without oauth
         """
         # create a staff user
-        staff_user = User.objects.create_user('test_staff_user', 'test_staff_user@openedx.org', 'test')
+        staff_user = UserFactory(username='test_staff_user', email='test_staff_user@openedx.org', password='test')
         # add staff role to the staff user
         CourseStaffRole(self.master_course_key).add_users(staff_user)
 
@@ -194,7 +196,9 @@ class CcxListTest(CcxRestApiTest):
         Check authorization for instructor users logged in without oauth
         """
         # create an instructor user
-        instructor_user = User.objects.create_user('test_instructor_user', 'test_instructor_user@openedx.org', 'test')
+        instructor_user = UserFactory(
+            username='test_instructor_user', email='test_instructor_user@openedx.org', password='test'
+        )
         # add instructor role to the instructor user
         CourseInstructorRole(self.master_course_key).add_users(instructor_user)
 
@@ -217,7 +221,9 @@ class CcxListTest(CcxRestApiTest):
         Check authorization for coach users logged in without oauth
         """
         # create an coach user
-        coach_user = User.objects.create_user('test_coach_user', 'test_coach_user@openedx.org', 'test')
+        coach_user = UserFactory(
+            username='test_coach_user', email='test_coach_user@openedx.org', password='test'
+        )
         # add coach role to the coach user
         CourseCcxCoachRole(self.master_course_key).add_users(coach_user)
 
