@@ -161,6 +161,7 @@ def get_ccxs_for_coach(course, coach):
             list_ccx.append({
                 "ccx_id": ccx.id,
                 "display_name": ccx.display_name,
+                "coach_name": ccx.coach.profile.name,
                 "ccx_dashboard_url": reverse('ccx_coach_dashboard', kwargs={
                     'course_id': CCXLocator.from_course_locator(course.id, ccx.id)
                 })

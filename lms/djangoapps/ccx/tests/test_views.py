@@ -247,6 +247,7 @@ class TestCoachDashboard(CcxTestCase, LoginEnrollmentTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 403)
 
+    @patch('ccx.views.render_to_response', intercept_renderer)
     def test_no_ccx_created(self):
         """
         No CCX is created, coach should see form to add a CCX.
@@ -257,6 +258,7 @@ class TestCoachDashboard(CcxTestCase, LoginEnrollmentTestCase):
             kwargs={'course_id': unicode(self.course.id)})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.mako_context['list_ccx']), 0)
         self.assertTrue(re.search(
             '<form action=".+create_ccx"',
             response.content))
@@ -284,6 +286,7 @@ class TestCoachDashboard(CcxTestCase, LoginEnrollmentTestCase):
         )
         self.assertTrue(re.search(error_message, response.content))
 
+    @patch('ccx.views.render_to_response', intercept_renderer)
     def test_create_ccx(self, ccx_name='New CCX'):
         """
         Create CCX. Follow redirect to coach dashboard, confirm we see
@@ -297,12 +300,14 @@ class TestCoachDashboard(CcxTestCase, LoginEnrollmentTestCase):
 
         response = self.client.post(url, {'name': ccx_name})
         self.assertEqual(response.status_code, 302)
-        url = response.get('location')  # pylint: disable=no-member
-        response = self.client.get(url)
+        ccx_master_course_dashboard = response.get('location')  # pylint: disable=no-member
+        response = self.client.get(ccx_master_course_dashboard)
         self.assertEqual(response.status_code, 200)
 
         # Get the ccx_key
-        path = urlparse.urlparse(url).path
+        ccx_dashboard_url = response.mako_context['list_ccx'][0]['ccx_dashboard_url']
+        response = self.client.get(ccx_dashboard_url)
+        path = urlparse.urlparse(ccx_dashboard_url).path
         resolver = resolve(path)
         ccx_key = resolver.kwargs['course_id']
 
@@ -332,10 +337,6 @@ class TestCoachDashboard(CcxTestCase, LoginEnrollmentTestCase):
             list_instructor_ccx_course = list_with_level(course_ccx, 'instructor')
             self.assertEqual(len(list_instructor_ccx_course), len(list_instructor_master_course))
             self.assertEqual(list_instructor_ccx_course[0].email, list_instructor_master_course[0].email)
-
-    @ddt.data("CCX demo 1", "CCX demo 2", "CCX demo 3")
-    def test_create_multiple_ccx(self, ccx_name):
-        self.test_create_ccx(ccx_name)
 
     @ddt.data("CCX demo 1", "CCX demo 2", "CCX demo 3")
     def test_create_multiple_ccx(self, ccx_name):

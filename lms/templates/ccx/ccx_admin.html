@@ -19,25 +19,35 @@ from django.core.urlresolvers import reverse
 <%include file="/courseware/course_navigation.html" args="active_page='ccx_coach'" />
 <section class="container">
   <div class="instructor-dashboard-wrapper-2">
-    <section class="instructor-dashboard-content-2">
+    <section class="instructor-dashboard-content-2 idash-section active-section" id="membership">
       % if list_ccx:
         <h2>My CCX LIST:</h2>
-        <table class="table table-simplified table-cozy">
-          <thead>
-            <tr>
-              <th>${_("CCX ID")}</th>
-              <th>${_("CCX Dashboard URL")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            % for ccx in list_ccx:
-              <tr>
-                <td>${ccx['ccx_id']}</td>
-                <td><a href="${ccx['ccx_dashboard_url']}">${ccx['display_name'] or course.display_name}</a></td>
-              </tr>
-            % endfor
-          </tbody>
-        </table>
+        <div class="member-lists-management">
+          <div class="auth-list-container active">
+            <div class="member-list-widget">
+              <div class="member-list">
+                <table>
+                  <thead>
+                    <tr>
+                      <td width="50" class="label">${_("CCX ID ")}</td>
+                      <td width="120" class="label">${_("CCX Coach ")}</td>
+                      <td class="label">${_("CCX Dashboard URL")}</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    % for ccx in list_ccx:
+                      <tr>
+                        <td>${ccx['ccx_id']}</td>
+                        <td>${ccx['coach_name']}</td>
+                        <td><a href="${ccx['ccx_dashboard_url']}">${ccx['display_name'] or course.display_name}</a></td>
+                      </tr>
+                    % endfor
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
         <hr/>
       % endif
       <br/>
