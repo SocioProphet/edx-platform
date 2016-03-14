@@ -793,6 +793,8 @@ def get_student_grade_summary_data(
                 else:
                     category_cnts = Counter()
                     progress_summary = grades._progress_summary(student, request, course)
+                    if not progress_summary:
+                        continue
                     for grade_item in gradeset['section_breakdown']:
                         category = grade_item['category']
                         try:
