@@ -259,7 +259,7 @@ def instructor_dashboard(request, course_id):
                 ddata = []
                 # do one by one in case there is a student who has only partial grades
                 for student in allgrades['students']:
-                    if len(student.grades) >= aidx and student.grades[aidx] is not None:
+                    if hasattr(student, 'grades') and len(student.grades) >= aidx and student.grades[aidx] is not None:
                         ddata.append(
                             [
                                 student.email,
@@ -767,6 +767,9 @@ def get_student_grade_summary_data(
     gtab = GradeTable()
 
     for student in enrolled_students:
+        if not student.id or not student.profile:
+            continue
+
         datarow = [student.id, student.username, student.profile.name, student.email]
         try:
             datarow.append(student.externalauthmap.external_email)
@@ -775,8 +778,12 @@ def get_student_grade_summary_data(
 
         if get_grades:
             gradeset = student_grades(student, request, course, keep_raw_scores=get_raw_scores, use_offline=use_offline)
+            if not gradeset:
+                continue
             log.debug(u'student=%s, gradeset=%s', student, gradeset)
             with gtab.add_row(student.id) as add_grade:
+                if not add_grade:
+                    continue
                 if get_raw_scores:
                     # The following code calls add_grade, which is an alias
                     # for the add_row method on the GradeTable class. This adds
@@ -809,6 +816,7 @@ def get_student_grade_summary_data(
                             # student has not attempted it or it is not grade able.
                             add_grade(grade_item['label'], grade_item['percent'], possible=1)
                         category_cnts[category] += 1
+
             student.grades = gtab.get_grade(student.id)
 
         data.append(datarow)
