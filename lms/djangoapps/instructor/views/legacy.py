@@ -12,7 +12,7 @@ import re
 import requests
 import urllib
 
-from collections import defaultdict, OrderedDict
+from collections import defaultdict, OrderedDict, Counter
 from markupsafe import escape
 from requests.status_codes import codes
 from StringIO import StringIO
@@ -34,7 +34,6 @@ from opaque_keys.edx.locations import SlashSeparatedCourseKey
 from courseware import grades
 from courseware.access import has_access
 from courseware.courses import get_course_with_access, get_cms_course_link
-from courseware.models import StudentModule
 from django_comment_common.models import FORUM_ROLE_ADMINISTRATOR
 from django_comment_client.utils import has_forum_access
 from instructor.offline_gradecalc import student_grades, offline_grades_available
@@ -235,25 +234,41 @@ def instructor_dashboard(request, course_id):
     elif action in ['Display grades for assignment', 'Export grades for assignment to remote gradebook',
                     'Export CSV file of grades for assignment']:
 
+        normalize_grades_enable = 1 if request.POST.get('normalize_grades', None) else 0
         log.debug(action)
         datatable = {}
         aname = request.POST.get('assignment_name', '')
         if not aname:
             msg += "<font color='red'>{text}</font>".format(text=_("Please enter an assignment name"))
         else:
-            allgrades = get_student_grade_summary_data(request, course, get_grades=True, use_offline=use_offline)
+            allgrades = get_student_grade_summary_data(
+                request,
+                course,
+                get_grades=True,
+                use_offline=use_offline,
+                get_score_max=False if normalize_grades_enable == 1 else True
+            )
+
             if aname not in allgrades['assignments']:
                 msg += "<font color='red'>{text}</font>".format(
                     text=_("Invalid assignment name '{name}'").format(name=aname)
                 )
             else:
                 aidx = allgrades['assignments'].index(aname)
-                datatable = {'header': [_('External email'), aname]}
+                datatable = {'header': ['External email', aname, 'max_pts', 'normalize']}
                 ddata = []
-                for student in allgrades['students']:  # do one by one in case there is a student who has only partial grades
-                    try:
-                        ddata.append([student.email, student.grades[aidx]])
-                    except IndexError:
+                # do one by one in case there is a student who has only partial grades
+                for student in allgrades['students']:
+                    if hasattr(student, 'grades') and len(student.grades) >= aidx and student.grades[aidx] is not None:
+                        ddata.append(
+                            [
+                                student.email,
+                                student.grades[aidx][0],
+                                student.grades[aidx][1],
+                                normalize_grades_enable
+                            ],
+                        )
+                    else:
                         log.debug(u'No grade for assignment %(idx)s (%(name)s) for student %(email)s', {
                             "idx": aidx,
                             "name": aname,
@@ -659,17 +674,21 @@ class GradeTable(object):
         self.grades = {}
         self._current_row = {}
 
-    def _add_grade_to_row(self, component, score):
+    def _add_grade_to_row(self, component, score, possible=None):
         """Creates component if needed, and assigns score
 
         Args:
             component (str): Course component being graded
             score (float): Score of student on component
+            possible (float): Max possible score for the component
 
         Returns:
            None
         """
         component_index = self.components.setdefault(component, len(self.components))
+        if possible is not None:
+            # send a tuple instead of a single value
+            score = (score, possible)
         self._current_row[component_index] = score
 
     @contextmanager
@@ -709,7 +728,10 @@ class GradeTable(object):
         return self.components.keys()
 
 
-def get_student_grade_summary_data(request, course, get_grades=True, get_raw_scores=False, use_offline=False):
+def get_student_grade_summary_data(
+        request, course, get_grades=True, get_raw_scores=False,
+        use_offline=False, get_score_max=False
+):
     """
     Return data arrays with student identity and grades for specified course.
 
@@ -725,6 +747,11 @@ def get_student_grade_summary_data(request, course, get_grades=True, get_raw_sco
     data = list (one per student) of lists of data corresponding to the fields
 
     If get_raw_scores=True, then instead of grade summaries, the raw grades for all graded modules are returned.
+
+    If get_score_max is True, two values will be returned for each grade -- the
+    total number of points earned and the total number of points possible. For
+    example, if two points are possible and one is earned, (1, 2) will be
+    returned instead of 0.5 (the default).
     """
     course_key = course.id
     enrolled_students = User.objects.filter(
@@ -740,6 +767,9 @@ def get_student_grade_summary_data(request, course, get_grades=True, get_raw_sco
     gtab = GradeTable()
 
     for student in enrolled_students:
+        if not student.id or not student.profile:
+            continue
+
         datarow = [student.id, student.username, student.profile.name, student.email]
         try:
             datarow.append(student.externalauthmap.external_email)
@@ -748,15 +778,45 @@ def get_student_grade_summary_data(request, course, get_grades=True, get_raw_sco
 
         if get_grades:
             gradeset = student_grades(student, request, course, keep_raw_scores=get_raw_scores, use_offline=use_offline)
+            if not gradeset:
+                continue
             log.debug(u'student=%s, gradeset=%s', student, gradeset)
             with gtab.add_row(student.id) as add_grade:
+                if not add_grade:
+                    continue
                 if get_raw_scores:
-                    # TODO (ichuang) encode Score as dict instead of as list, so score[0] -> score['earned']
+                    # The following code calls add_grade, which is an alias
+                    # for the add_row method on the GradeTable class. This adds
+                    # a grade for each assignment. Depending on whether
+                    # get_score_max is True, it will return either a single
+                    # value as a float between 0 and 1, or a two-tuple
+                    # containing the earned score and possible score for
+                    # the assignment (see docstring).
                     for score in gradeset['raw_scores']:
-                        add_grade(score.section, getattr(score, 'earned', score[0]))
+                        if get_score_max is True:
+                            add_grade(score.section, score.earned, score.possible)
+                        else:
+                            add_grade(score.section, score.earned)
                 else:
+                    category_cnts = Counter()
+                    progress_summary = grades._progress_summary(student, request, course)
+                    if not progress_summary:
+                        continue
                     for grade_item in gradeset['section_breakdown']:
-                        add_grade(grade_item['label'], grade_item['percent'])
+                        category = grade_item['category']
+                        try:
+                            location = gradeset['totaled_scores'][category][category_cnts[category]].module_id
+                            earned, possible = progress_summary.score_for_module(location)
+                            if get_score_max is True:
+                                add_grade(grade_item['label'], earned, possible=possible)
+                            else:
+                                add_grade(grade_item['label'], grade_item['percent'], possible=1)
+                        except (IndexError, KeyError):
+                            # if exercise is in 'section_breakdown' dict but not in 'totaled_scores' because either
+                            # student has not attempted it or it is not grade able.
+                            add_grade(grade_item['label'], grade_item['percent'], possible=1)
+                        category_cnts[category] += 1
+
             student.grades = gtab.get_grade(student.id)
 
         data.append(datarow)
