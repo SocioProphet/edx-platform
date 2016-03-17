@@ -272,6 +272,38 @@ class LoginTest(TestCase):
         self.assertEqual(response.status_code, 302)
 
     @patch.dict("django.conf.settings.FEATURES", {'PREVENT_CONCURRENT_LOGINS': True})
+    def test_single_session_with_no_user_profile(self):
+        user = UserFactory.build(username='tester', email='tester@edx.org')
+        user.set_password('test_password')
+        user.save()
+
+        creds = {'email': 'test@edx.org', 'password': 'test_password'}
+        client1 = Client()
+        client2 = Client()
+
+        response = client1.post(self.url, creds)
+        self._assert_response(response, success=True)
+
+        # Reload the user from the database
+        user = UserFactory.FACTORY_FOR.objects.get(pk=user.pk)
+        self.assertFalse(hasattr(user, 'profile'))
+
+        # second login should log out the first
+        response = client2.post(self.url, creds)
+        self._assert_response(response, success=True)
+
+        try:
+            # this test can be run with either lms or studio settings
+            # since studio does not have a dashboard url, we should
+            # look for another url that is login_required, in that case
+            url = reverse('dashboard')
+        except NoReverseMatch:
+            url = reverse('upload_transcripts')
+        response = client1.get(url)
+        # client1 will be logged out
+        self.assertEqual(response.status_code, 302)
+
+    @patch.dict("django.conf.settings.FEATURES", {'PREVENT_CONCURRENT_LOGINS': True})
     def test_single_session_with_url_not_having_login_required_decorator(self):
         # accessing logout url as it does not have login-required decorator it will avoid redirect
         # and go inside the enforce_single_login
