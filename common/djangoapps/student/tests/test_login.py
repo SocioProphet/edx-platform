@@ -273,6 +273,11 @@ class LoginTest(TestCase):
 
     @patch.dict("django.conf.settings.FEATURES", {'PREVENT_CONCURRENT_LOGINS': True})
     def test_single_session_with_no_user_profile(self):
+        """
+        Assert that user login with cas (Central Authentication Service) is
+        redirect to dashboard in case of lms or upload_transcripts in case of
+        cms
+        """
         user = UserFactory.build(username='tester', email='tester@edx.org')
         user.set_password('test_password')
         user.save()
