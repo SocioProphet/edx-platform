@@ -1602,6 +1602,11 @@ def enforce_single_login(sender, request, user, signal, **kwargs):    # pylint: 
         else:
             key = None
         if user:
+            if not UserProfile.objects.filter(user=user):
+                # if user's profile is not set then create it
+                user_profile = UserProfile(name=user.username, user=user)
+                user_profile.save()
+
             user.profile.set_login_session(key)
 
 
