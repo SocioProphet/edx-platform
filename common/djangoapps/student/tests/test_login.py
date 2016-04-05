@@ -282,16 +282,21 @@ class LoginTest(TestCase):
         user.set_password('test_password')
         user.save()
 
-        creds = {'email': 'test@edx.org', 'password': 'test_password'}
+        creds = {'email': 'tester@edx.org', 'password': 'test_password'}
         client1 = Client()
         client2 = Client()
+
+        # Assert that no profile is created.
+        self.assertFalse(hasattr(user, 'profile'))
 
         response = client1.post(self.url, creds)
         self._assert_response(response, success=True)
 
         # Reload the user from the database
         user = UserFactory.FACTORY_FOR.objects.get(pk=user.pk)
-        self.assertFalse(hasattr(user, 'profile'))
+
+        # assert profile is created.
+        self.assertTrue(hasattr(user, 'profile'))
 
         # second login should log out the first
         response = client2.post(self.url, creds)
