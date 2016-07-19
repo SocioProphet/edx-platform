@@ -66,7 +66,10 @@ from lms.djangoapps.ccx.tests.utils import (
     CcxTestCase,
     flatten,
 )
-from lms.djangoapps.ccx.utils import is_email
+from lms.djangoapps.ccx.utils import (
+    is_email,
+    add_master_course_staff_to_ccx
+)
 from lms.djangoapps.ccx.views import get_date
 
 from xmodule.modulestore.django import modulestore
@@ -1029,6 +1032,7 @@ class TestCCXGrades(FieldOverrideTestMixin, SharedModuleStoreTestCase, LoginEnro
         # create staff and instructor on course.
         self.staff = self.make_staff()
         self.instructor = self.make_instructor()
+        add_master_course_staff_to_ccx(self.course, self.ccx_key, ccx.display_name)
 
     def make_staff(self):
         """
@@ -1050,6 +1054,15 @@ class TestCCXGrades(FieldOverrideTestMixin, SharedModuleStoreTestCase, LoginEnro
 
         return instructor
 
+    def contains(self, list, filter):
+        """
+        Search value in given list.
+        """
+        for obj in list:
+            if filter(obj):
+                return True
+        return False
+
     @patch('ccx.views.render_to_response', intercept_renderer)
     @patch('instructor.views.gradebook_api.MAX_STUDENTS_PER_PAGE_GRADE_BOOK', 1)
     def test_gradebook(self):
@@ -1065,9 +1078,30 @@ class TestCCXGrades(FieldOverrideTestMixin, SharedModuleStoreTestCase, LoginEnro
         # Max number of student per page is one.  Patched setting MAX_STUDENTS_PER_PAGE_GRADE_BOOK = 1
         self.assertEqual(len(response.mako_context['students']), 1)  # pylint: disable=no-member
 
-        self.assertNotIn(self.staff.username, response.mako_context['students'])
-        self.assertNotIn(self.instructor.username, response.mako_context['students'])
-        self.assertNotIn(self.coach.username, response.mako_context['students'])
+        self.assertFalse(
+            self.contains(
+                response.mako_context['students'],
+                lambda student: student['username'] == self.staff.username
+            )
+        )
+        self.assertFalse(
+            self.contains(
+                response.mako_context['students'],
+                lambda student: student['username'] == self.instructor.username
+            )
+        )
+        self.assertFalse(
+            self.contains(
+                response.mako_context['students'],
+                lambda student: student['username'] == self.coach.username
+            )
+        )
+        self.assertTrue(
+            self.contains(
+                response.mako_context['students'],
+                lambda student: student['username'] == self.student.username
+            )
+        )
 
         student_info = response.mako_context['students'][0]  # pylint: disable=no-member
         self.assertEqual(student_info['grade_summary']['percent'], 0.5)
@@ -1095,9 +1129,18 @@ class TestCCXGrades(FieldOverrideTestMixin, SharedModuleStoreTestCase, LoginEnro
         rows = response.content.strip().split('\r')
         headers = rows[0]
 
-        self.assertNotIn(self.staff.username, rows)
-        self.assertNotIn(self.instructor.username, rows)
-        self.assertNotIn(self.coach.username, rows)
+        self.assertFalse(
+            self.contains(rows, lambda row: self.staff.username in row)
+        )
+        self.assertFalse(
+            self.contains(rows, lambda row: self.instructor.username in row)
+        )
+        self.assertFalse(
+            self.contains(rows, lambda row: self.coach.username in row)
+        )
+        self.assertTrue(
+            self.contains(rows, lambda row: self.student.username in row)
+        )
 
         # picking first student records
         data = dict(zip(headers.strip().split(','), rows[1].strip().split(',')))
