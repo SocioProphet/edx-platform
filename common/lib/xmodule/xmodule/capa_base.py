@@ -11,6 +11,8 @@ import sys
 import traceback
 
 from django.conf import settings
+from django.urls import reverse
+from django.utils.http import urlquote_plus
 from pytz import utc
 from django.utils.encoding import smart_text
 from six import text_type
@@ -62,6 +64,7 @@ class Randomization(String):
     """
     Define a field to store how to randomize a problem.
     """
+
     def from_json(self, value):
         if value in ("", "true"):
             return RANDOMIZATION.ALWAYS
@@ -76,6 +79,7 @@ class ComplexEncoder(json.JSONEncoder):
     """
     Extend the JSON encoder to correctly handle complex numbers
     """
+
     def default(self, obj):  # pylint: disable=method-hidden
         """
         Print a nicely formatted complex number, or default to the JSON encoder
@@ -225,6 +229,7 @@ class CapaMixin(ScorableXBlockMixin, CapaFields):
     """
         Core logic for Capa Problem, which can be used by XModules or XBlocks.
     """
+
     def __init__(self, *args, **kwargs):
         super(CapaMixin, self).__init__(*args, **kwargs)
 
@@ -430,6 +435,12 @@ class CapaMixin(ScorableXBlockMixin, CapaFields):
             'content': self.get_problem_html(encapsulate=False),
             'graded': self.graded,
         })
+
+    def public_view(self, context=None):
+        """
+        Return "student_view" content for public_view too.
+        """
+        return self.student_view(context)
 
     def submit_button_name(self):
         """
@@ -715,6 +726,9 @@ class CapaMixin(ScorableXBlockMixin, CapaFields):
                 u"Your answers were previously saved. Click '{button_name}' to grade them."
             ).format(button_name=self.submit_button_name())
 
+        # For anonymous users, don't show the attempts count.
+        attempts_allowed = self.max_attempts if self.runtime.user_id else 0
+
         context = {
             'problem': content,
             'id': text_type(self.location),
@@ -726,7 +740,7 @@ class CapaMixin(ScorableXBlockMixin, CapaFields):
             'save_button': self.should_show_save_button(),
             'answer_available': self.answer_available(),
             'attempts_used': self.attempts,
-            'attempts_allowed': self.max_attempts,
+            'attempts_allowed': attempts_allowed,
             'demand_hint_possible': demand_hint_possible,
             'should_enable_next_hint': should_enable_next_hint,
             'answer_notification_type': answer_notification_type,
@@ -1138,7 +1152,8 @@ class CapaMixin(ScorableXBlockMixin, CapaFields):
         if kwargs.get('grader_response'):
             event['grader_response'] = kwargs['grader_response']
 
-        self.runtime.publish(self, 'grade', event)
+        if self.runtime.user_id:
+            self.runtime.publish(self, 'grade', event)
 
         return {'grade': self.score.raw_earned, 'max_grade': self.score.raw_possible}
 
@@ -1463,6 +1478,36 @@ class CapaMixin(ScorableXBlockMixin, CapaFields):
         event_info['answers'] = answers
         _ = self.runtime.service(self, "i18n").ugettext
 
+        # Anonymous users cannot save problem.
+        if not self.runtime.user_id:
+            event_info['failure'] = 'anonymous_user'
+            self.track_function_unmask('save_problem_fail', event_info)
+            next_url = urlquote_plus(reverse('jump_to',
+                                             kwargs={
+                                                 'course_id': self.location.course_key,
+                                                 'location': self.location
+                                             }))
+
+            signin_link = u'{signin_link}?next={next_url}'.format(
+                signin_link=reverse('signin_user'),
+                next_url=next_url
+            )
+            error_message = _(
+                u'You need to be {signin_link_start}logged in{signin_link_end} '
+                u'to be able to save your answers.'
+            )
+            error_message = Text(error_message).format(
+                signin_link_start=HTML(
+                    '<span><a class="signin-link" href={signin_link}>'.format(
+                        signin_link=signin_link
+                    )),
+                signin_link_end=HTML('</a></span>')
+            )
+            return {
+                'success': False,
+                'msg': error_message
+            }
+
         # Too late. Cannot submit
         if self.closed() and not self.max_attempts == 0:
             event_info['failure'] = 'closed'
@@ -1531,7 +1576,7 @@ class CapaMixin(ScorableXBlockMixin, CapaFields):
                 # pylint: enable=line-too-long
             }
 
-        if not self.is_submitted():
+        if not self.is_submitted() and self.runtime.user_id:
             event_info['failure'] = 'not_done'
             self.track_function_unmask('reset_problem_fail', event_info)
             return {

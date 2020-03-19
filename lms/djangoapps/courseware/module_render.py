@@ -78,6 +78,7 @@ from openedx.core.lib.xblock_utils import (
     get_aside_from_xblock,
 )
 from openedx.features.course_duration_limits.access import course_expiration_wrapper
+from openedx.features.course_experience import COURSE_ENABLE_UNENROLLED_ACCESS_FLAG
 from student.models import anonymous_id_for_user, user_by_anonymous_id
 from student.roles import CourseBetaTesterRole
 from track import contexts
@@ -1012,7 +1013,10 @@ def handle_xblock_callback(request, course_id, usage_id, handler, suffix=None):
         suffix (str)
 
     Raises:
-        HttpResponseForbidden: If the request method is not `GET` and user is not authenticated.
+        HttpResponseForbidden: If :
+            - the request method is not `GET` AND
+            - the course does not have "public access" enabled AND
+            - user is not authenticated
         Http404: If the course is not found in the modulestore.
     """
     # In this case, we are using Session based authentication, so we need to check CSRF token.
@@ -1042,15 +1046,19 @@ def handle_xblock_callback(request, course_id, usage_id, handler, suffix=None):
 
     # NOTE (CCB): Allow anonymous GET calls (e.g. for transcripts). Modifying this view is simpler than updating
     # the XBlocks to use `handle_xblock_callback_noauth`, which is practically identical to this view.
-    if request.method != 'GET' and not (request.user and request.user.is_authenticated):
-        return HttpResponseForbidden()
-
-    request.user.known = request.user.is_authenticated
 
     try:
         course_key = CourseKey.from_string(course_id)
     except InvalidKeyError:
         raise Http404('{} is not a valid course key'.format(course_id))
+
+    if (request.method != 'GET' and
+        not COURSE_ENABLE_UNENROLLED_ACCESS_FLAG.is_enabled(course_key=course_key) and
+        not (request.user and
+             request.user.is_authenticated)):
+        return HttpResponseForbidden()
+
+    request.user.known = request.user.is_authenticated
 
     with modulestore().bulk_operations(course_key):
         try:

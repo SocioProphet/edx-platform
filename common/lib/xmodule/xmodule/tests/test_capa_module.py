@@ -14,10 +14,12 @@ import textwrap
 import unittest
 
 import ddt
+from django.urls import reverse
 from django.utils.encoding import smart_text
+from django.utils.http import urlquote_plus
 from edx_user_state_client.interface import XBlockUserState
 from lxml import etree
-from mock import Mock, patch, DEFAULT
+from mock import call, ANY, Mock, patch, DEFAULT
 import six
 import webob
 from webob.multidict import MultiDict
@@ -29,10 +31,13 @@ from capa.responsetypes import (StudentInputError, LoncapaProblemError,
                                 ResponseError)
 from capa.xqueue_interface import XQueueInterface
 from xmodule.capa_module import CapaModule, CapaDescriptor, ComplexEncoder
+from xmodule.x_module import STUDENT_VIEW, PUBLIC_VIEW
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
 from xblock.field_data import DictFieldData
 from xblock.fields import ScopeIds
 from xblock.scorable import Score
+
+from openedx.core.djangolib.markup import HTML, Text
 
 from . import get_test_system
 from pytz import UTC
@@ -578,6 +583,23 @@ class CapaModuleTest(unittest.TestCase):
                                     due=self.yesterday_str)
         self.assertTrue(module.closed())
 
+    def test_public_view(self):
+        """
+        Test that public view for capa problems returns
+        the same content as the student view
+        """
+        html = u'<p>This is a test</p>'
+
+        module_system = get_test_system()
+        module = CapaFactory.create()
+
+        module.runtime.render_template.return_value = html
+
+        rendered_student_view = module_system.render(module, STUDENT_VIEW, {}).content
+        rendered_public_view = module_system.render(module, PUBLIC_VIEW, {}).content
+
+        self.assertEqual(rendered_student_view, rendered_public_view)
+
     def test_parse_get_params(self):
 
         # Valid GET param dict
@@ -672,6 +694,39 @@ class CapaModuleTest(unittest.TestCase):
         self.assertEqual(module.attempts, 1)
         # and that this is considered the first attempt
         self.assertEqual(module.lcp.context['attempt'], 1)
+
+    def test_submit_problem_with_authenticated_user(self):
+        """
+        Test that publish is called with "grade" event upon submission
+        if the user is authenticated.
+        """
+        problem = CapaFactory.create(attempts=5)
+        get_request_dict = {CapaFactory.input_key(): '0'}
+        grade_publish_call = call(ANY, 'grade', ANY)
+
+        problem.runtime.publish = Mock(name='mock_publish')
+
+        problem.submit_problem(get_request_dict)
+
+        self.assertEqual(problem.runtime.publish.call_count, 2)
+        problem.runtime.publish.assert_has_calls([grade_publish_call])
+
+    def test_submit_problem_with_anonymous_user(self):
+        """
+        Test that publish is not called with "grade" event upon submission
+        if the user is anonymous.
+        """
+        problem = CapaFactory.create(attempts=5)
+        get_request_dict = {CapaFactory.input_key(): '0'}
+        grade_publish_call = call(ANY, 'grade', ANY)
+
+        problem.runtime.user_id = None
+        problem.runtime.publish = Mock(name='mock_publish')
+
+        problem.submit_problem(get_request_dict)
+
+        self.assertEqual(problem.runtime.publish.call_count, 1)
+        self.assertNotIn(grade_publish_call, problem.runtime.publish.call_args_list)
 
     def test_submit_problem_closed(self):
         module = CapaFactory.create(attempts=3)
@@ -1223,6 +1278,44 @@ class CapaModuleTest(unittest.TestCase):
 
         # Expect that the result is success
         self.assertTrue('success' in result and result['success'])
+
+    def test_save_problem_with_anonymous_user(self):
+        """
+        Test that when an anonymous user tries to save the problem,
+        they are displayed an error message.
+        """
+        module = CapaFactory.create(done=False)
+        next_url = urlquote_plus(reverse('jump_to', kwargs={
+            'course_id': module.location.course_key,
+            'location': module.location
+        }))
+
+        regiteration_link = u'{signin_link}?next={next_url}'.format(
+            signin_link=reverse('signin_user'),
+            next_url=next_url
+        )
+        expected_message = (
+            u'You need to be {signin_link_start}logged in{signin_link_end} '
+            u'to be able to save your answers.'
+        )
+        expected_message = Text(expected_message).format(
+            signin_link_start=HTML(
+                '<span><a class="signin-link" href={signin_link}>'.format(
+                    signin_link=regiteration_link
+                )),
+            signin_link_end=HTML('</a></span>')
+        )
+
+        module.runtime.user_id = None
+
+        # Save the problem
+        get_request_dict = {CapaFactory.input_key(): '3.14'}
+        result = module.save_problem(get_request_dict)
+
+        self.assertEqual(result['msg'], expected_message)
+
+        # Expect that the result is failure
+        self.assertTrue('success' in result and not result['success'])
 
     def test_save_problem_closed(self):
         module = CapaFactory.create(done=False)
