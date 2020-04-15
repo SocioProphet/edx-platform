@@ -773,7 +773,7 @@ class XModuleMixin(XModuleFields, XBlock):
             'course_id': self.location.course_key,
         }))
 
-        link_start = lambda url: HTML(u'<a href={url}>'.format(url=url))
+        link_start = lambda url: HTML(u'<a href="{url}">'.format(url=url))
         link_end = HTML(u'</a>')
 
         with_next_url = lambda url: u'{url}?next={next_url}'.format(
@@ -781,22 +781,34 @@ class XModuleMixin(XModuleFields, XBlock):
             next_url=next_url
         )
 
-        display_text = _(
-            u'{display_name} is only accessible to enrolled learners. '
-            u'{sign_in_link_start}Sign in{sign_in_link_end} or '
-            u'{register_link_start}register{register_link_end}, '
-            u'and enroll in this course to view it.'
-        )
+        display_text = _(u'{display_name} is only accessible to enrolled learners.')
+        display_name = self.display_name or u'This content'
 
-        dispaly_name = self.display_name or 'This content'
+        # for anonymous users, show sign-in and register links
+        if not self.runtime.user_id:
+            display_text += _(
+                u' {sign_in_link_start}Sign in{sign_in_link_end} or '
+                u'{register_link_start}register{register_link_end}, '
+                u'and enroll in this course to view it.'
+            )
+            display_text = Text(display_text).format(
+                display_name=display_name,
+                sign_in_link_start=link_start(with_next_url(reverse('signin_user'))),
+                sign_in_link_end=link_end,
+                register_link_start=link_start(with_next_url(reverse('register_user'))),
+                register_link_end=link_end
+            )
 
-        display_text = Text(display_text).format(
-            display_name=dispaly_name,
-            sign_in_link_start=link_start(with_next_url(reverse('signin_user'))),
-            sign_in_link_end=link_end,
-            register_link_start=link_start(with_next_url(reverse('register_user'))),
-            register_link_end=link_end
-        )
+        # for logged in users, show "enroll" link only.
+        else:
+            display_text += _(u' {enroll_link_start}Enroll{enroll_link_end} in this course to view it.')
+            display_text = Text(display_text).format(
+                display_name=display_name,
+                enroll_link_start=link_start(reverse('course_root', kwargs={
+                    'course_id': self.location.course_key
+                })),
+                enroll_link_end=link_end
+            )
 
         return Fragment(alert_html.format(display_text))
 
