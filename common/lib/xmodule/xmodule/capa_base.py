@@ -865,7 +865,11 @@ class CapaMixin(ScorableXBlockMixin, CapaFields):
         """
         Is the student still allowed to submit answers?
         """
-        if self.max_attempts is not None and self.attempts >= self.max_attempts:
+        if (
+            self.max_attempts is not None and
+            self.runtime.user_id and
+            self.attempts >= self.max_attempts
+        ):
             return True
         if self.is_past_due():
             return True
@@ -901,6 +905,8 @@ class CapaMixin(ScorableXBlockMixin, CapaFields):
         """
         Is the user allowed to see an answer?
         """
+        is_authenticated = bool(self.runtime.user_id)
+
         if not self.correctness_available():
             # If correctness is being withheld, then don't show answers either.
             return False
@@ -913,18 +919,18 @@ class CapaMixin(ScorableXBlockMixin, CapaFields):
             # unless the problem explicitly prevents it
             return True
         elif self.showanswer == SHOWANSWER.ATTEMPTED:
-            return self.attempts > 0 or self.is_past_due()
+            return (is_authenticated and self.attempts > 0) or self.is_past_due()
         elif self.showanswer == SHOWANSWER.ANSWERED:
             # NOTE: this is slightly different from 'attempted' -- resetting the problems
             # makes lcp.done False, but leaves attempts unchanged.
-            return self.is_correct()
+            return is_authenticated and self.is_correct()
         elif self.showanswer == SHOWANSWER.CLOSED:
             return self.closed()
         elif self.showanswer == SHOWANSWER.FINISHED:
-            return self.closed() or self.is_correct()
+            return (is_authenticated and self.is_correct()) or self.closed()
 
         elif self.showanswer == SHOWANSWER.CORRECT_OR_PAST_DUE:
-            return self.is_correct() or self.is_past_due()
+            return (is_authenticated and self.is_correct()) or self.is_past_due()
         elif self.showanswer == SHOWANSWER.PAST_DUE:
             return self.is_past_due()
         elif self.showanswer == SHOWANSWER.ALWAYS:
