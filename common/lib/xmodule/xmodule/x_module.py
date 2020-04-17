@@ -5,6 +5,8 @@ import time
 import yaml
 
 from contracts import contract, new_contract
+from django.urls import reverse
+from django.utils.http import urlquote_plus
 from functools import partial
 from lxml import etree
 from collections import namedtuple
@@ -38,7 +40,7 @@ from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.asides import AsideUsageKeyV2, AsideDefinitionKeyV2
 from xmodule.exceptions import UndefinedContext
 
-from openedx.core.djangolib.markup import HTML
+from openedx.core.djangolib.markup import HTML, Text
 
 log = logging.getLogger(__name__)
 
@@ -72,11 +74,6 @@ STUDIO_VIEW = 'studio_view'
 # Views that present a "preview" view of an xblock (as opposed to an editing view).
 PREVIEW_VIEWS = [STUDENT_VIEW, PUBLIC_VIEW, AUTHOR_VIEW]
 
-DEFAULT_PUBLIC_VIEW_MESSAGE = (
-    u'This content is only accessible to enrolled learners. '
-    u'Sign in or register, and enroll in this course to view it.'
-)
-
 # Make '_' a no-op so we can scrape strings. Using lambda instead of
 #  `django.utils.translation.ugettext_noop` because Django cannot be imported in this file
 _ = lambda text: text
@@ -86,6 +83,7 @@ class OpaqueKeyReader(IdReader):
     """
     IdReader for :class:`DefinitionKey` and :class:`UsageKey`s.
     """
+
     def get_definition_id(self, usage_id):
         """Retrieve the definition that a usage is derived from.
 
@@ -163,6 +161,7 @@ class AsideKeyGenerator(IdGenerator):
     """
     An :class:`.IdGenerator` that only provides facilities for constructing new XBlockAsides.
     """
+
     def create_aside(self, definition_id, usage_id, aside_type):
         """
         Make a new aside definition and usage ids, indicating an :class:`.XBlockAside` of type `aside_type`
@@ -770,15 +769,46 @@ class XModuleMixin(XModuleFields, XBlock):
             u'<div class="message-content">{}</div></div></div>'
         )
 
-        if self.display_name:
-            display_text = _(
-                u'{display_name} is only accessible to enrolled learners. '
-                'Sign in or register, and enroll in this course to view it.'
-            ).format(
-                display_name=self.display_name
+        next_url = urlquote_plus(reverse('course_root', kwargs={
+            'course_id': self.location.course_key,
+        }))
+
+        link_start = lambda url: HTML(u'<a href="{url}">'.format(url=url))
+        link_end = HTML(u'</a>')
+
+        with_next_url = lambda url: u'{url}?next={next_url}'.format(
+            url=url,
+            next_url=next_url
+        )
+
+        display_text = _(u'{display_name} is only accessible to enrolled learners.')
+        display_name = self.display_name or u'This content'
+
+        # for anonymous users, show sign-in and register links
+        if not self.runtime.user_id:
+            display_text += _(
+                u' {sign_in_link_start}Sign in{sign_in_link_end} or '
+                u'{register_link_start}register{register_link_end}, '
+                u'and enroll in this course to view it.'
             )
+            display_text = Text(display_text).format(
+                display_name=display_name,
+                sign_in_link_start=link_start(with_next_url(reverse('signin_user'))),
+                sign_in_link_end=link_end,
+                register_link_start=link_start(with_next_url(reverse('register_user'))),
+                register_link_end=link_end
+            )
+
+        # for logged in users, show "enroll" link only.
         else:
-            display_text = _(DEFAULT_PUBLIC_VIEW_MESSAGE)
+            display_text += _(u' {enroll_link_start}Enroll{enroll_link_end} in this course to view it.')
+            display_text = Text(display_text).format(
+                display_name=display_name,
+                enroll_link_start=link_start(reverse('course_root', kwargs={
+                    'course_id': self.location.course_key
+                })),
+                enroll_link_end=link_end
+            )
 
         return Fragment(alert_html.format(display_text))
 
@@ -805,6 +835,7 @@ class ProxyAttribute(object):
     del bar.foo_attr
     assert not hasattr(bar.foo, 'foo_attr')
     """
+
     def __init__(self, source, name):
         """
         :param source: The name of the attribute to proxy to
@@ -900,6 +931,7 @@ class XModule(HTMLSnippet, XModuleMixin):
             name, so we carry the FieldStorage .filename attribute as the .name.
 
             """
+
             def __init__(self, webob_file):
                 self.file = webob_file.file
                 self.name = webob_file.filename
@@ -1261,6 +1293,7 @@ class ConfigurableFragmentWrapper(object):
     """
     Runtime mixin that allows for composition of many `wrap_xblock` wrappers
     """
+
     def __init__(self, wrappers=None, wrappers_asides=None, **kwargs):
         """
         :param wrappers: A list of wrappers, where each wrapper is:
@@ -1394,6 +1427,7 @@ class DescriptorSystem(MetricsMixin, ConfigurableFragmentWrapper, Runtime):
     Base class for :class:`Runtime`s to be used with :class:`XModuleDescriptor`s
     """
     # pylint: disable=bad-continuation
+
     def __init__(
         self, load_item, resources_fs, error_tracker, get_policy=None, disabled_xblock_types=lambda: [], **kwargs
     ):
@@ -1986,6 +2020,7 @@ class CombinedSystem(object):
 
 class DoNothingCache(object):
     """A duck-compatible object to use in ModuleSystem when there's no cache."""
+
     def get(self, _key):
         return None
 

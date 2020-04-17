@@ -331,6 +331,18 @@ class ModuleRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
         response = self.client.post(dispatch_url, {'position': 2})
         self.assertEquals(403, response.status_code)
 
+    @patch(
+        'lms.djangoapps.courseware.module_render.COURSE_ENABLE_UNENROLLED_ACCESS_FLAG.is_enabled', return_value=True
+    )
+    def test_anonymous_post_xblock_callback_with_public_access_enabled(self, _):
+        """
+        Test that anonymous POST is allowed if public access to
+        the course is enabled.
+        """
+        dispatch_url = self._get_dispatch_url()
+        response = self.client.post(dispatch_url, {'position': 2})
+        self.assertEquals(200, response.status_code)
+
     def test_session_authentication(self):
         """ Test that the xblock endpoint supports session authentication."""
         self.client.login(username=self.mock_user.username, password="test")
@@ -968,6 +980,7 @@ class TestXBlockView(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
 @ddt.ddt
 class TestTOC(ModuleStoreTestCase):
     """Check the Table of Contents for a course"""
+
     def setup_request_and_course(self, num_finds, num_sends):
         """
         Sets up the toy course in the modulestore and the request object.
@@ -1080,6 +1093,7 @@ class TestProctoringRendering(SharedModuleStoreTestCase):
         cls.course_key = ToyCourseFactory.create().id
 
     """Check the Table of Contents for a course"""
+
     def setUp(self):
         """
         Set up the initial mongo datastores
@@ -1421,6 +1435,7 @@ class TestGatedSubsectionRendering(SharedModuleStoreTestCase, MilestonesTestCase
     """
     Test the toc for a course is rendered correctly when there is gated content
     """
+
     def setUp(self):
         """
         Set up the initial test data
@@ -1498,6 +1513,7 @@ class TestHtmlModifiers(ModuleStoreTestCase):
     Tests to verify that standard modifications to the output of XModule/XBlock
     student_view are taking place
     """
+
     def setUp(self):
         super(TestHtmlModifiers, self).setUp()
         self.course = CourseFactory.create()
@@ -1793,6 +1809,7 @@ class DetachedXBlock(XBlock):
     """
     XBlock marked with the 'detached' flag.
     """
+
     def student_view(self, context=None):  # pylint: disable=unused-argument
         """
         A simple view that returns just enough to test.
@@ -2226,6 +2243,7 @@ class TestRebindModule(TestSubmittingProblems):
     Tests to verify the functionality of rebinding a module.
     Inherit from TestSubmittingProblems to get functionality that set up a course structure
     """
+
     def setUp(self):
         super(TestRebindModule, self).setUp()
         self.homework = self.add_graded_section_to_course('homework')
@@ -2588,6 +2606,7 @@ class TestDisabledXBlockTypes(ModuleStoreTestCase):
     """
     Tests that verify disabled XBlock types are not loaded.
     """
+
     def setUp(self):
         super(TestDisabledXBlockTypes, self).setUp()
         XBlockConfiguration(name='video', enabled=False).save()

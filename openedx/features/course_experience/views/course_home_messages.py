@@ -25,7 +25,7 @@ from lms.djangoapps.course_goals.api import (
 from lms.djangoapps.course_goals.models import GOAL_KEY_CHOICES
 from openedx.core.djangoapps.plugin_api.views import EdxFragmentView
 from openedx.core.djangolib.markup import HTML, Text
-from openedx.features.course_experience import CourseHomeMessages
+from openedx.features.course_experience import CourseHomeMessages, COURSE_ENABLE_UNENROLLED_ACCESS_FLAG
 from student.models import CourseEnrollment
 
 
@@ -47,6 +47,7 @@ class CourseHomeMessageFragmentView(EdxFragmentView):
         'is_staff': True if the user is a staff member of the course, False otherwise
     }
     """
+
     def render_to_fragment(self, request, course_id, user_access, **kwargs):
         """
         Renders a course message fragment for the specified course.
@@ -108,21 +109,36 @@ def _register_course_home_messages(request, course, user_access, course_start_da
     Register messages to be shown in the course home content page.
     """
     if user_access['is_anonymous']:
-        CourseHomeMessages.register_info_message(
-            request,
-            Text(_(
+        sign_in_link = HTML('<a href="/login?next={current_url}">{sign_in_label}</a>').format(
+            sign_in_label=_('Sign in'),
+            current_url=urlquote_plus(request.path),
+        )
+        register_link = HTML('<a href="/register?next={current_url}">{register_label}</a>').format(
+            register_label=_('register'),
+            current_url=urlquote_plus(request.path),
+        )
+
+        if COURSE_ENABLE_UNENROLLED_ACCESS_FLAG.is_enabled(course.id):
+            message_content = ''
+            message_title = Text(
+                _('{sign_in_link} or {register_link} to save course progress,'
+                  ' save responses before submitting, ask questions to the community, and more!')
+            ).format(
+                sign_in_link=sign_in_link,
+                register_link=register_link
+            )
+        else:
+            message_title = Text(_('You must be enrolled in the course to see course content.'))
+            message_content = Text(_(
                 '{sign_in_link} or {register_link} and then enroll in this course.'
             )).format(
-                sign_in_link=HTML('<a href="/login?next={current_url}">{sign_in_label}</a>').format(
-                    sign_in_label=_('Sign in'),
-                    current_url=urlquote_plus(request.path),
-                ),
-                register_link=HTML('<a href="/register?next={current_url}">{register_label}</a>').format(
-                    register_label=_('register'),
-                    current_url=urlquote_plus(request.path),
-                )
-            ),
-            title=Text(_('You must be enrolled in the course to see course content.'))
+                sign_in_link=sign_in_link,
+                register_link=register_link)
+
+        CourseHomeMessages.register_info_message(
+            request,
+            message_content,
+            title=message_title
         )
     if not user_access['is_anonymous'] and not user_access['is_staff'] and not user_access['is_enrolled']:
         CourseHomeMessages.register_info_message(
