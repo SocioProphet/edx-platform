@@ -1488,10 +1488,9 @@ class CapaMixin(ScorableXBlockMixin, CapaFields):
         if not self.runtime.user_id:
             event_info['failure'] = 'anonymous_user'
             self.track_function_unmask('save_problem_fail', event_info)
-            next_url = urlquote_plus(reverse('jump_to',
+            next_url = urlquote_plus(reverse('about_course',
                                              kwargs={
                                                  'course_id': self.location.course_key,
-                                                 'location': self.location
                                              }))
 
             signin_link = u'{signin_link}?next={next_url}'.format(
