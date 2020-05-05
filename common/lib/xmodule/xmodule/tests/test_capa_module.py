@@ -1285,9 +1285,8 @@ class CapaModuleTest(unittest.TestCase):
         they are displayed an error message.
         """
         module = CapaFactory.create(done=False)
-        next_url = urlquote_plus(reverse('jump_to', kwargs={
+        next_url = urlquote_plus(reverse('about_course', kwargs={
             'course_id': module.location.course_key,
-            'location': module.location
         }))
 
         regiteration_link = u'{signin_link}?next={next_url}'.format(
