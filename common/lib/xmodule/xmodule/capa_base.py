@@ -1493,20 +1493,22 @@ class CapaMixin(ScorableXBlockMixin, CapaFields):
                                                  'course_id': self.location.course_key,
                                              }))
 
-            signin_link = u'{signin_link}?next={next_url}'.format(
-                signin_link=reverse('signin_user'),
+            with_next_url = lambda url: u'{url}?next={next_url}'.format(
+                url=url,
                 next_url=next_url
             )
+            link_start = lambda url: HTML(u'<span><a href="{url}">'.format(url=url))
+            link_end = HTML(u'</a></span>')
+
             error_message = _(
-                u'You need to be {signin_link_start}logged in{signin_link_end} '
-                u'to be able to save your answers.'
+                u'You must be logged in to save your answers. Please {signin_link_start}sign in{signin_link_end}'
+                u' or {register_link_start}register{register_link_end} to use this feature.'
             )
             error_message = Text(error_message).format(
-                signin_link_start=HTML(
-                    '<span><a class="signin-link" href={signin_link}>'.format(
-                        signin_link=signin_link
-                    )),
-                signin_link_end=HTML('</a></span>')
+                signin_link_start=link_start(with_next_url(reverse('signin_user'))),
+                signin_link_end=link_end,
+                register_link_start=link_start(with_next_url(reverse('register_user'))),
+                register_link_end=link_end,
             )
             return {
                 'success': False,
