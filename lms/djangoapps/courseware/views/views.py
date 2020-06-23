@@ -98,6 +98,7 @@ from openedx.features.course_experience.views.course_dates import CourseDatesFra
 from openedx.features.course_experience.waffle import ENABLE_COURSE_ABOUT_SIDEBAR_HTML
 from openedx.features.course_experience.waffle import waffle as course_experience_waffle
 from openedx.features.enterprise_support.api import data_sharing_consent_required
+from milestones.exceptions import InvalidUserException
 from openedx.features.journals.api import get_journals_context
 from shoppingcart.utils import is_shopping_cart_enabled
 from student.models import CourseEnrollment, UserTestGroup
@@ -581,6 +582,14 @@ class CourseTabView(EdxFragmentView):
             raise
         if isinstance(exception, UnicodeEncodeError):
             raise Http404("URL contains Unicode characters")
+        if isinstance(exception, InvalidUserException):
+            course_key = str(course.id)
+            next_url = urlquote_plus(reverse('about_course', kwargs={
+                'course_id': course_key
+            }))
+            url = '{}?next={}'.format(reverse('signin_user'), next_url)
+            return redirect(url)
+
         if settings.DEBUG:
             raise
         user = request.user
@@ -864,6 +873,11 @@ def course_about(request, course_id):
 
         # Embed the course reviews tool
         reviews_fragment_view = CourseReviewsModuleFragmentView().render_to_fragment(request, course=course)
+
+        # if the course has some pre-requisites and the user is not
+        # enrolled in the course, don't show the "View Course" button
+        if not registered and pre_requisite_courses:
+            show_courseware_link = False
 
         context = {
             'course': course,
