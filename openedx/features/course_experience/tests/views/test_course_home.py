@@ -322,7 +322,8 @@ class TestCourseHomePageAccess(CourseHomePageTestCase):
                     enable_unenrolled_access and
                     is_anonymous
                 ):
-                    self.assertContains(response, 'ask questions to the community, and more!')
+                    self.assertContains(response, 'to access all course content, save course progress,'
+                                        ' save responses before submitting, and more!')
                 else:
                     self.assertContains(response, 'You must be enrolled in the course to see course content.')
 

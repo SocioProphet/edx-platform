@@ -121,8 +121,8 @@ def _register_course_home_messages(request, course, user_access, course_start_da
         if COURSE_ENABLE_UNENROLLED_ACCESS_FLAG.is_enabled(course.id):
             message_content = ''
             message_title = Text(
-                _('{sign_in_link} or {register_link} to save course progress,'
-                  ' save responses before submitting, ask questions to the community, and more!')
+                _('{sign_in_link} or {register_link} to access all course content,'
+                  ' save course progress, save responses before submitting, and more!')
             ).format(
                 sign_in_link=sign_in_link,
                 register_link=register_link

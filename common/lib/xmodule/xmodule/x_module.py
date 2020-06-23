@@ -781,15 +781,15 @@ class XModuleMixin(XModuleFields, XBlock):
             next_url=next_url
         )
 
-        display_text = _(u'{display_name} is only accessible to enrolled learners.')
-        display_name = self.display_name or u'This content'
+        display_text = _(u'This {display_name} assessment is only available to enrolled learners,')
+        display_name = self.display_name or u'This assessment'
 
         # for anonymous users, show sign-in and register links
         if not self.runtime.user_id:
             display_text += _(
-                u' {sign_in_link_start}Sign in{sign_in_link_end} or '
+                u' please {sign_in_link_start}sign in{sign_in_link_end} or '
                 u'{register_link_start}register{register_link_end}, '
-                u'and enroll in this course to view it.'
+                u'and enroll in this course to view the content.'
             )
             display_text = Text(display_text).format(
                 display_name=display_name,
@@ -801,7 +801,7 @@ class XModuleMixin(XModuleFields, XBlock):
 
         # for logged in users, show "enroll" link only.
         else:
-            display_text += _(u' {enroll_link_start}Enroll{enroll_link_end} in this course to view it.')
+            display_text += _(u' please {enroll_link_start}enroll{enroll_link_end} in this course to view the content.')
             display_text = Text(display_text).format(
                 display_name=display_name,
                 enroll_link_start=link_start(reverse('course_root', kwargs={

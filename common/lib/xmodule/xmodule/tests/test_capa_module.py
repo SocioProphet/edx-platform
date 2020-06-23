@@ -1289,20 +1289,23 @@ class CapaModuleTest(unittest.TestCase):
             'course_id': module.location.course_key,
         }))
 
-        regiteration_link = u'{signin_link}?next={next_url}'.format(
-            signin_link=reverse('signin_user'),
+        with_next_url = lambda url: u'{url}?next={next_url}'.format(
+            url=url,
             next_url=next_url
         )
-        expected_message = (
-            u'You need to be {signin_link_start}logged in{signin_link_end} '
-            u'to be able to save your answers.'
+        link_start = lambda url: HTML(u'<span><a href="{url}">'.format(url=url))
+        link_end = HTML(u'</a></span>')
+
+
+        expected_error_message = (
+            u'You must be logged in to save your answers. Please {signin_link_start}sign{signin_link_end}'
+            u' in or {register_link_start}register{register_link_end} to use this feature.'
         )
-        expected_message = Text(expected_message).format(
-            signin_link_start=HTML(
-                '<span><a class="signin-link" href={signin_link}>'.format(
-                    signin_link=regiteration_link
-                )),
-            signin_link_end=HTML('</a></span>')
+        expected_error_message = Text(expected_error_message).format(
+            signin_link_start=link_start(with_next_url(reverse('signin_user'))),
+            signin_link_end=link_end,
+            register_link_start=link_start(with_next_url(reverse('register_user'))),
+            register_link_end=link_end,
         )
 
         module.runtime.user_id = None
@@ -1311,7 +1314,7 @@ class CapaModuleTest(unittest.TestCase):
         get_request_dict = {CapaFactory.input_key(): '3.14'}
         result = module.save_problem(get_request_dict)
 
-        self.assertEqual(result['msg'], expected_message)
+        self.assertEqual(result['msg'], expected_error_message)
 
         # Expect that the result is failure
         self.assertTrue('success' in result and not result['success'])

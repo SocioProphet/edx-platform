@@ -97,8 +97,11 @@ class VerticalBlock(SequenceFields, XModuleFields, StudioEditableBlock, XmlParse
         }
 
         if view == STUDENT_VIEW:
+            # Do not display "Bookmark" button for children blocks
+            # (e.g. Content Experiment Groups) otherwise multiple
+            # bookmark buttons would be displayed in the same unit/page
             fragment_context.update({
-                'show_bookmark_button': child_context.get('show_bookmark_button', not is_child_of_vertical),
+                'show_bookmark_button': not is_child_of_vertical and child_context.get('show_bookmark_button', True),
                 'bookmarked': child_context['bookmarked'],
                 'bookmark_id': u"{},{}".format(
                     child_context['username'], unicode(self.location)),  # pylint: disable=no-member
