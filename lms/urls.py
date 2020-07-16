@@ -8,6 +8,7 @@ from django.conf.urls.static import static
 from django.contrib.admin import autodiscover as django_autodiscover
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.base import RedirectView
+from django.views.generic import TemplateView
 from rest_framework_swagger.views import get_swagger_view
 
 from branding import views as branding_views
@@ -143,6 +144,9 @@ urlpatterns = [
 
     url(r'^dashboard/', include('learner_dashboard.urls')),
     url(r'^api/experiments/', include('experiments.urls', namespace='api_experiments')),
+
+    # robots.txt for mit oll
+    url(r'^robots\.txt/$', TemplateView.as_view(template_name='robots.txt', content_type='text/plain')),
 ]
 
 if settings.FEATURES.get('ENABLE_MOBILE_REST_API'):
