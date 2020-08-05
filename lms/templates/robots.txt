@@ -99,3 +99,6 @@ Disallow: /?q=user/login/
 Disallow: /?q=user/logout/
 Disallow: /?search_query=*
 Disallow: /?course=*
+
+# Sitemaps
+Sitemap: https://openlearninglibrary.mit.edu/sitemap.xml
