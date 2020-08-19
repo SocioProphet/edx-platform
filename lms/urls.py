@@ -53,6 +53,9 @@ from student import views as student_views
 from track import views as track_views
 from util import views as util_views
 
+# MIT redirect the url single course hotfix as client asked
+from djangoapps.course_api import views as course_api_view
+
 if settings.DEBUG or settings.FEATURES.get('ENABLE_DJANGO_ADMIN_SITE'):
     django_autodiscover()
     admin.site.site_header = _('LMS Administration')
@@ -147,6 +150,9 @@ urlpatterns = [
 
     # robots.txt for mit oll
     url(r'^robots\.txt/$', TemplateView.as_view(template_name='robots.txt', content_type='text/plain')),
+
+    # redirecting due to high priority hotfix
+    url(r'^pre-biology', course_api_view.redirect_courses, name='redirect_single_course'),
 ]
 
 if settings.FEATURES.get('ENABLE_MOBILE_REST_API'):
