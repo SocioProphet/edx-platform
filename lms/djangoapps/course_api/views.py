@@ -5,6 +5,8 @@ Course API Views
 import search
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.throttling import UserRateThrottle
 
@@ -16,6 +18,8 @@ from .api import course_detail, list_courses
 from .forms import CourseDetailGetForm, CourseListGetForm
 from .serializers import CourseDetailSerializer, CourseSerializer
 
+# MIT-OLL : course Id for temporary redirection of a course
+BIOLOGY_COURSE_ID = 'course-v1:OCW+Pre-7.01+1T2020'
 
 @view_auth_classes(is_authenticated=False)
 class CourseDetailView(DeveloperErrorViewMixin, RetrieveAPIView):
@@ -270,3 +274,7 @@ class CourseListView(DeveloperErrorViewMixin, ListAPIView):
             course for course in db_courses
             if unicode(course.id) in search_courses_ids
         ]
+
+
+def redirect_courses(request):
+    return HttpResponseRedirect((reverse('about_course', kwargs={'course_id': BIOLOGY_COURSE_ID})))
