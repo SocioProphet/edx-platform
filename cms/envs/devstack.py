@@ -125,8 +125,8 @@ FEATURES['LICENSING'] = True
 XBLOCK_SETTINGS.update({'VideoBlock': {'licensing_enabled': True}})
 
 ################################ SEARCH INDEX ################################
-FEATURES['ENABLE_COURSEWARE_INDEX'] = False
-FEATURES['ENABLE_LIBRARY_INDEX'] = False
+FEATURES['ENABLE_COURSEWARE_INDEX'] = True
+FEATURES['ENABLE_LIBRARY_INDEX'] = True
 SEARCH_ENGINE = "search.elastic.ElasticSearchEngine"
 
 ################################ COURSE DISCUSSIONS ###########################

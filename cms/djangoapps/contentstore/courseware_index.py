@@ -528,10 +528,17 @@ class AboutInfo(object):
 
         return [mode.slug for mode in CourseMode.modes_for_course(course.id)]
 
+    def from_other_settings(self, **kwargs):
+        course = kwargs.get('course', None)
+        if not course:
+            raise ValueError("Context dictionary does not contain expected argument 'course' ")
+        return course.other_course_settings.get('subject')
+
     # Source location options - either from the course or the about info
     FROM_ABOUT_INFO = from_about_dictionary
     FROM_COURSE_PROPERTY = from_course_property
     FROM_COURSE_MODE = from_course_mode
+    FROM_OTHER_SETTINGS = from_other_settings
 
 
 class CourseAboutSearchIndexer(object):
@@ -570,6 +577,7 @@ class CourseAboutSearchIndexer(object):
         AboutInfo("org", AboutInfo.PROPERTY, AboutInfo.FROM_COURSE_PROPERTY),
         AboutInfo("modes", AboutInfo.PROPERTY, AboutInfo.FROM_COURSE_MODE),
         AboutInfo("language", AboutInfo.PROPERTY, AboutInfo.FROM_COURSE_PROPERTY),
+        AboutInfo("subject", AboutInfo.PROPERTY, AboutInfo.FROM_OTHER_SETTINGS),
     ]
 
     @classmethod

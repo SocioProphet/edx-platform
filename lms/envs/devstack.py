@@ -198,11 +198,14 @@ COURSE_DISCOVERY_MEANINGS = {
         },
     },
     'language': LANGUAGE_MAP,
+    'subject': {
+        'name': 'Subject',
+    },
 }
 
-FEATURES['ENABLE_COURSE_DISCOVERY'] = False
+FEATURES['ENABLE_COURSE_DISCOVERY'] = True
 # Setting for overriding default filtering facets for Course discovery
-# COURSE_DISCOVERY_FILTERS = ["org", "language", "modes"]
+COURSE_DISCOVERY_FILTERS = ["org", "language", "modes", "subject"]
 FEATURES['COURSES_ARE_BROWSEABLE'] = True
 HOMEPAGE_COURSE_MAX = 9
 

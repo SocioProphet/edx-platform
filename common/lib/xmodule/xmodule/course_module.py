@@ -1020,6 +1020,9 @@ class CourseFields(object):
             "external systems such as CRM software. Enter a dictionary of values in JSON format, such as "
             "{ \"my_custom_setting\": \"value\", \"other_setting\": \"value\" }"
         ),
+        default={
+            "subject": "Default Subject"
+        },
         scope=Scope.settings
     )
 

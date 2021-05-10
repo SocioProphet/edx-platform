@@ -225,7 +225,7 @@ FEATURES = {
 
     # Show a new field in "Advanced settings" that can store custom data about a
     # course and that can be read from themes
-    'ENABLE_OTHER_COURSE_SETTINGS': False,
+    'ENABLE_OTHER_COURSE_SETTINGS': True,
 
     # Write new CSM history to the extended table.
     # This will eventually default to True and may be
