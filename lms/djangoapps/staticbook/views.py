@@ -4,6 +4,7 @@ Views for serving static textbooks.
 
 
 from django.contrib.auth.decorators import login_required
+from lms.djangoapps.staticbook.decorators import allow_anonymous_or_login_required
 from django.http import Http404
 from django.views.decorators.clickjacking import xframe_options_exempt
 from opaque_keys.edx.keys import CourseKey
@@ -14,7 +15,7 @@ from edxmako.shortcuts import render_to_response
 from static_replace import replace_static_urls
 
 
-@login_required
+@allow_anonymous_or_login_required
 def index(request, course_id, book_index, page=None):
     """
     Serve static image-based textbooks.
@@ -60,7 +61,7 @@ def remap_static_url(original_url, course):
     return output_url[1:-1]
 
 
-@login_required
+@allow_anonymous_or_login_required
 @xframe_options_exempt
 def pdf_index(request, course_id, book_index, chapter=None, page=None):
     """
@@ -131,7 +132,7 @@ def pdf_index(request, course_id, book_index, chapter=None, page=None):
     )
 
 
-@login_required
+@allow_anonymous_or_login_required
 def html_index(request, course_id, book_index, chapter=None):
     """
     Display an HTML textbook.
