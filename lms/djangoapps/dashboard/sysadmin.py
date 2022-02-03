@@ -212,9 +212,17 @@ class Users(SysadminDashboardView):
         track.views.server_track(request, action, {}, page='user_sysdashboard')
 
         if action == 'download_users':
-            header = [_('username'), _('email'), ]
-            data = ([u.username, u.email] for u in
-                    (User.objects.all().iterator()))
+            header = [_('username'), _('email'), _('name'), _('country') ]
+            data = []
+            for u in (User.objects.select_related('profile').iterator()):
+                try:
+                    data.append([u.username, u.email, u.profile.name, u.profile.country])
+                except UserProfile.DoesNotExist as err:
+                    data.append([u.username, u.email, '', ''])
+                    msg = _(u'Cannot find user profile with username {username} - {error}').format(
+                        username=u.username,
+                        error=str(err))
+                    log.warning(msg)
             return self.return_csv('users_{0}.csv'.format(
                 request.META['SERVER_NAME']), header, data)
         elif action == 'create_user':
