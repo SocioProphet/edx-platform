@@ -141,6 +141,8 @@ class UserReadOnlySerializer(serializers.Serializer):
             "profile_image": None,
             "language_proficiencies": None,
             "name": None,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
             "gender": None,
             "goals": None,
             "year_of_birth": None,
@@ -222,7 +224,7 @@ class AccountUserSerializer(serializers.HyperlinkedModelSerializer, ReadOnlyFiel
     """
     class Meta(object):
         model = User
-        fields = ("username", "email", "date_joined", "is_active")
+        fields = ("username", "first_name", "last_name", "email", "date_joined", "is_active")
         read_only_fields = ("username", "email", "date_joined", "is_active")
         explicit_read_only_fields = ()
 

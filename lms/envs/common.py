@@ -3293,7 +3293,8 @@ ACCOUNT_VISIBILITY_CONFIGURATION["bulk_shareable_fields"] = (
 # The list of all fields that can be shared selectively with other users using the 'custom' privacy setting
 ACCOUNT_VISIBILITY_CONFIGURATION["custom_shareable_fields"] = (
     ACCOUNT_VISIBILITY_CONFIGURATION["bulk_shareable_fields"] + [
-        "name",
+        "first_name",
+        "last_name",
     ]
 )
 
