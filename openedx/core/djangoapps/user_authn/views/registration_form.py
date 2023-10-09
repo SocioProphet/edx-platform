@@ -97,7 +97,7 @@ def validate_name(name):
         name (unicode): The name to validate.
     """
     if contains_html(name):
-        raise forms.ValidationError(_('Full Name cannot contain the following characters: < >'))
+        raise forms.ValidationError(_('First/last Name cannot contain the following characters: < >'))
 
 
 class UsernameField(forms.CharField):
@@ -136,7 +136,8 @@ class AccountCreationForm(forms.Form):
     """
 
     _EMAIL_INVALID_MSG = _(u"A properly formatted e-mail is required")
-    _NAME_TOO_SHORT_MSG = _(u"Your legal name must be a minimum of one character long")
+    _FIRST_NAME_TOO_SHORT_MSG = _(u"Your legal first name must be a minimum of one character long")
+    _LAST_NAME_TOO_SHORT_MSG = _(u"Your legal last name must be a minimum of one character long")
 
     # TODO: Resolve repetition
 
@@ -154,11 +155,19 @@ class AccountCreationForm(forms.Form):
 
     password = forms.CharField()
 
-    name = forms.CharField(
+    first_name = forms.CharField(
         min_length=accounts.NAME_MIN_LENGTH,
         error_messages={
-            "required": _NAME_TOO_SHORT_MSG,
-            "min_length": _NAME_TOO_SHORT_MSG,
+            "required": _FIRST_NAME_TOO_SHORT_MSG,
+            "min_length": _FIRST_NAME_TOO_SHORT_MSG,
+        },
+        validators=[validate_name]
+    )
+    last_name = forms.CharField(
+        min_length=accounts.NAME_MIN_LENGTH,
+        error_messages={
+            "required": _LAST_NAME_TOO_SHORT_MSG,
+            "min_length": _LAST_NAME_TOO_SHORT_MSG,
         },
         validators=[validate_name]
     )
@@ -294,12 +303,10 @@ class RegistrationFormFactory(object):
     Construct Registration forms and associated fields.
     """
 
-    DEFAULT_FIELDS = ["email", "name", "username", "password"]
+    DEFAULT_FIELDS = ["email", "first_name", "last_name", "username", "password"]
 
     EXTRA_FIELDS = [
         "confirm_email",
-        "first_name",
-        "last_name",
         "city",
         "state",
         "country",
