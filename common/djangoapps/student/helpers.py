@@ -608,6 +608,8 @@ def do_create_account(form, custom_form=None):
     user = User(
         username=proposed_username,
         email=form.cleaned_data["email"],
+        first_name=form.cleaned_data["first_name"],
+        last_name=form.cleaned_data["last_name"],
         is_active=False
     )
     password = normalize_password(form.cleaned_data["password"])
@@ -646,12 +648,13 @@ def do_create_account(form, custom_form=None):
     registration.register(user)
 
     profile_fields = [
-        "name", "level_of_education", "gender", "mailing_address", "city", "country", "goals",
+        "level_of_education", "gender", "mailing_address", "city", "country", "goals",
         "year_of_birth"
     ]
     profile = UserProfile(
         user=user,
-        **{key: form.cleaned_data.get(key) for key in profile_fields}
+        **{key: form.cleaned_data.get(key) for key in profile_fields},
+        name=form.cleaned_data["first_name"] + ' ' + form.cleaned_data["last_name"], 
     )
     extended_profile = form.cleaned_extended_profile
     if extended_profile:

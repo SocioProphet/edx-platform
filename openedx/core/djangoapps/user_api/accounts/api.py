@@ -138,12 +138,18 @@ def update_account_settings(requesting_user, update, username=None):
 
     user_serializer = AccountUserSerializer(user, data=update)
     legacy_profile_serializer = AccountLegacyProfileSerializer(user_profile, data=update)
+
+    if 'first_name' in update or 'last_name' in update: # store first and last name in user profile as well
+        update['name'] = update.get('first_name', user.first_name) + ' ' + update.get('last_name', user.last_name)
+
     for serializer in user_serializer, legacy_profile_serializer:
         add_serializer_errors(serializer, update, field_errors)
 
     _validate_email_change(user, update, field_errors)
     _validate_secondary_email(user, update, field_errors)
-    old_name = _validate_name_change(user_profile, update, field_errors)
+    _validate_name_change(user_profile, "first_name", update, field_errors)
+    _validate_name_change(user_profile, "last_name", update, field_errors)
+    old_name = _get_oldname(user_profile, update)
     old_language_proficiencies = _get_old_language_proficiencies_if_updating(user_profile, update)
 
     if field_errors:
@@ -236,23 +242,33 @@ def _validate_secondary_email(user, data, field_errors):
             del data["secondary_email"]
 
 
-def _validate_name_change(user_profile, data, field_errors):
-    # If user has requested to change name, store old name because we must update associated metadata
-    # after the save process is complete.
-    if "name" not in data:
-        return None
+def _validate_name_change(user_profile, name_field, data, field_errors):
+    if name_field not in data:
+        return
 
-    old_name = user_profile.name
     try:
-        validate_name(data['name'])
+        validate_name(data[name_field])
+        _validate_not_empty(data[name_field])
     except ValidationError as err:
-        field_errors["name"] = {
+        field_errors[name_field] = {
             "developer_message": u"Error thrown from validate_name: '{}'".format(err.message),
             "user_message": err.message
         }
         return None
 
-    return old_name
+
+def _get_oldname(user_profile, data):
+    # If user has requested to change name, store old name because we must update associated metadata
+    # after the save process is complete.
+    if "name" not in data:
+        return None
+    
+    return user_profile.name
+
+def _validate_not_empty(value):
+    if not value:
+        raise ValidationError(u"This field cannot be empty")
+    
 
 
 def _get_old_language_proficiencies_if_updating(user_profile, data):

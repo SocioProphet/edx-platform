@@ -36,8 +36,8 @@
                 accountsSectionData, ordersSectionData, accountSettingsView, showAccountSettingsPage,
                 showLoadingError, orderNumber, getUserField, userFields, timeZoneDropdownField, countryDropdownField,
                 emailFieldView, secondaryEmailFieldView, socialFields, accountDeletionFields, platformData,
-                aboutSectionMessageType, aboutSectionMessage, fullnameFieldView, countryFieldView,
-                fullNameFieldData, emailFieldData, secondaryEmailFieldData, countryFieldData, additionalFields,
+                aboutSectionMessageType, aboutSectionMessage, firstNameFieldView, lastNameFieldView, countryFieldView,
+                firstNameFieldData, lastNameFieldData, emailFieldData, secondaryEmailFieldData, countryFieldData, additionalFields,
                 fieldItem, emailFieldViewIndex, focusId,
                 tabIndex = 0;
 
@@ -95,20 +95,37 @@
                 persistChanges: true
             };
 
-            fullNameFieldData = {
+            firstNameFieldData = {
                 model: userAccountModel,
-                title: gettext('Full Name'),
-                valueAttribute: 'name',
-                helpMessage: gettext('The name that is used for ID verification and that appears on your certificates.'),  // eslint-disable-line max-len,
+                title: gettext('First Name'),
+                valueAttribute: 'first_name',
+                helpMessage: gettext('Your first name.'),  // eslint-disable-line max-len,
                 persistChanges: true
             };
-            if (syncLearnerProfileData && enterpriseReadonlyAccountFields.fields.indexOf('name') !== -1) {
-                fullnameFieldView = {
-                    view: new AccountSettingsFieldViews.ReadonlyFieldView(fullNameFieldData)
+            if (syncLearnerProfileData && enterpriseReadonlyAccountFields.fields.indexOf('first_name') !== -1) {
+                firstNameFieldView = {
+                    view: new AccountSettingsFieldViews.ReadonlyFieldView(firstNameFieldData)
                 };
             } else {
-                fullnameFieldView = {
-                    view: new AccountSettingsFieldViews.TextFieldView(fullNameFieldData)
+                firstNameFieldView = {
+                    view: new AccountSettingsFieldViews.TextFieldView(firstNameFieldData)
+                };
+            }
+
+            lastNameFieldData = {
+                model: userAccountModel,
+                title: gettext('Last Name'),
+                valueAttribute: 'last_name',
+                helpMessage: gettext('Your last name.'),  // eslint-disable-line max-len,
+                persistChanges: true
+            }
+            if (syncLearnerProfileData && enterpriseReadonlyAccountFields.fields.indexOf('last_name') !== -1) {
+                lastNameFieldView = {
+                    view: new AccountSettingsFieldViews.ReadonlyFieldView(lastNameFieldData)
+                };
+            } else {
+                lastNameFieldView = {
+                    view: new AccountSettingsFieldViews.TextFieldView(lastNameFieldData)
                 };
             }
 
@@ -154,7 +171,8 @@
                                 )
                             })
                         },
-                        fullnameFieldView,
+                        firstNameFieldView,
+                        lastNameFieldView,
                         emailFieldView,
                         {
                             view: new AccountSettingsFieldViews.PasswordFieldView({

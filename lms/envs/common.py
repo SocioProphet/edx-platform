@@ -971,6 +971,7 @@ GOOGLE_ANALYTICS_ACCOUNT = None
 GOOGLE_SITE_VERIFICATION_ID = ''
 GOOGLE_ANALYTICS_LINKEDIN = 'GOOGLE_ANALYTICS_LINKEDIN_DUMMY'
 GOOGLE_ANALYTICS_TRACKING_ID = None
+GOOGLE_ANALYTICS_4_ID = None
 
 ######################## BRANCH.IO ###########################
 BRANCH_IO_KEY = ''
@@ -3292,7 +3293,8 @@ ACCOUNT_VISIBILITY_CONFIGURATION["bulk_shareable_fields"] = (
 # The list of all fields that can be shared selectively with other users using the 'custom' privacy setting
 ACCOUNT_VISIBILITY_CONFIGURATION["custom_shareable_fields"] = (
     ACCOUNT_VISIBILITY_CONFIGURATION["bulk_shareable_fields"] + [
-        "name",
+        "first_name",
+        "last_name",
     ]
 )
 
